@@ -133,7 +133,3 @@ Sound-Sculptor/
 ![Sculpt-it Yourself Option 2](https://github.com/user-attachments/assets/48cb104b-162e-4995-a81c-1040b86af582)
 ![Sculpt-it Yourself Option 3](https://github.com/user-attachments/assets/6977533d-09b7-47ae-924a-0d0423675392)
 
-## Contributors
-
-- **[Anushikha Singh](https://github.com/anushikha29)** — Backend, ML Model
-- **[Adnan Rashid](https://github.com/Dakuaisu)** — Frontend, Architecture
