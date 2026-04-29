@@ -1,0 +1,39 @@
+# Dependencies (will be installed fresh in container)
+node_modules/
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Environment files (injected at runtime)
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+dist/
+build/
+.cache/
+
+# Version control
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Sisyphus / OpenCode
+.sisyphus/
+opencode.json
+
+# ML artifacts (mounted as volumes)
+*.pkl
+*.csv
+
+# Pipfile (using requirements.txt in Docker)
+Pipfile.lock

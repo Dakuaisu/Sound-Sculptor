@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "name": "sound-sculptor",
+  "description": "AI-powered playlist generator using Spotify and machine learning",
+  "scripts": {
+    "dev:frontend": "npm run dev --prefix soundfrnt",
+    "dev:backend": "python -m server.run",
+    "build": "npm run build --prefix soundfrnt",
+    "docker:build": "docker build -t sound-sculptor .",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:dev": "docker compose --profile dev up"
+  }
+}

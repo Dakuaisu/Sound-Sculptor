@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    ports:
+      - "80:80"
+    env_file:
+      - .env
+    environment:
+      - FRONTEND_URL=http://localhost
+      - CORS_ORIGINS=http://localhost
+      - FLASK_ENV=production
+    restart: unless-stopped
+    volumes:
+      # Mount model artifacts if available locally
+      - ./model.pkl:/app/server/model.pkl:ro
+      - ./tracks_features.csv:/app/server/tracks_features.csv:ro
+
+  # Development mode — hot reload for both frontend and backend
+  dev:
+    profiles: ["dev"]
+    build:
+      context: .
+      target: production
+    ports:
+      - "5000:5000"
+      - "5173:5173"
+    env_file:
+      - .env
+    environment:
+      - FLASK_ENV=development
+    volumes:
+      - ./server:/app/server
+      - ./soundfrnt:/app/soundfrnt
+    command: >
+      bash -c "pip install -r requirements.txt &&
+               cd /app && python -m server.run &
+               cd /app/soundfrnt && npm install && npm run dev -- --host 0.0.0.0 &
+               wait"
