@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+.cache/
+
+# ML model artifacts
+*.pkl
+*.csv
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Sisyphus internal
+.sisyphus/
+
+# OpenCode
+opencode.json
+
+# Python
+*.egg-info/
+venv/
+.venv/
