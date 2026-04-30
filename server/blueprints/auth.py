@@ -12,6 +12,7 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/api')
 @auth_bp.route('/connect')
 def connect():
     """Redirect the user to Spotify's authorization page."""
+    session.clear()
     auth_url = get_spotify_oauth().get_authorize_url()
     return redirect(auth_url)
 
@@ -25,7 +26,7 @@ def callback():
         return {'error': 'Missing authorization code'}, 400
 
     oauth = get_spotify_oauth()
-    token_info = oauth.get_access_token(code)
+    token_info = oauth.get_access_token(code, check_cache=False)
     session[TOKEN_INFO] = token_info
 
     frontend_url = current_app.config['FRONTEND_URL']
