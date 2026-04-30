@@ -5,16 +5,27 @@ from spotipy.oauth2 import SpotifyOAuth
 
 TOKEN_INFO = 'token_info'
 
-
 def get_spotify_oauth():
-    """Build a SpotifyOAuth instance from app config."""
     cfg = current_app.config
+
     return SpotifyOAuth(
         client_id=cfg['SPOTIFY_CLIENT_ID'],
         client_secret=cfg['SPOTIFY_CLIENT_SECRET'],
         redirect_uri=url_for('auth.callback', _external=True),
         scope=cfg['SPOTIFY_SCOPES'],
+        cache_path=None,          
+        cache_handler=None 
     )
+
+# def get_spotify_oauth():
+#     """Build a SpotifyOAuth instance from app config."""
+#     cfg = current_app.config
+#     return SpotifyOAuth(
+#         client_id=cfg['SPOTIFY_CLIENT_ID'],
+#         client_secret=cfg['SPOTIFY_CLIENT_SECRET'],
+#         redirect_uri=url_for('auth.callback', _external=True),
+#         scope=cfg['SPOTIFY_SCOPES'],
+#     )
 
 
 def get_token():
