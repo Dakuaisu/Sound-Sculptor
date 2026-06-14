@@ -30,6 +30,9 @@ server/.cache
 .DS_Store
 Thumbs.db
 
+# Claude Code session files
+.claude/
+
 # Sisyphus internal
 .sisyphus/
 
