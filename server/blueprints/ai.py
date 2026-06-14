@@ -2,27 +2,27 @@ import json
 import logging
 import re
 
-from flask import Blueprint, request, session
-from openai import OpenAI
-from server.config import Config
-from server.services.spotify import get_spotify_client
+from flask import Blueprint, request, session, current_app
+from openai import OpenAI, OpenAIError
+from spotipy.exceptions import SpotifyException
+
+from server.services.spotify import get_spotify_client, create_playlist_with_tracks
 
 logger = logging.getLogger(__name__)
 
 ai_bp = Blueprint('ai', __name__, url_prefix='/api/ai')
 
+MAX_PROMPT_LEN = 500
+
 
 def _parse_songs_from_text(text: str) -> list[dict]:
     """Extract song entries from the AI response text.
 
-    Handles common formats:
-    - "Song Name" by Artist
-    - 1. Song Name - Artist
-    - Song Name — Artist
+    Handles common formats: ``"Song" by Artist``, ``1. Song - Artist``,
+    ``- Song by Artist`` (bullets), ``**Song** by Artist`` (markdown), and a
+    structured JSON ``{"songs": [...]}`` fast-path.
     """
-    songs = []
-
-    # Try JSON first (in case the model returns structured data)
+    # Structured JSON fast-path (in case the model returns structured data).
     try:
         parsed = json.loads(text)
         if isinstance(parsed, dict) and 'songs' in parsed:
@@ -32,30 +32,27 @@ def _parse_songs_from_text(text: str) -> list[dict]:
     except (json.JSONDecodeError, TypeError):
         pass
 
-    # Regex patterns for common song listing formats
     patterns = [
-        # "Song" by Artist  or  "Song" - Artist
-        r'"([^"]+)"\s*(?:by|[-–—])\s*(.+)',
-        # N. Song - Artist  or  N) Song - Artist
-        r'^\d+[.)]\s*(.+?)\s*[-–—]\s*(.+)',
-        # N. "Song" by Artist
-        r'^\d+[.)]\s*"([^"]+)"\s*(?:by|[-–—])\s*(.+)',
+        r'^\d+[.)]\s*"([^"]+)"\s*(?:by|[-–—])\s*(.+)',   # 1. "Song" by Artist
+        r'"([^"]+)"\s*(?:by|[-–—])\s*(.+)',              # "Song" by Artist
+        r'^\s*[-*•]\s*(.+?)\s*(?:by|[-–—])\s*(.+)',       # - Song by/— Artist (bullets)
+        r'^\d+[.)]\s*(.+?)\s*(?:by|[-–—])\s*(.+)',        # 1. Song - Artist
+        r'^(.+?)\s+(?:by|[-–—])\s+(.+)$',                 # Song by/— Artist (loose)
     ]
 
-    for line in text.strip().split('\n'):
-        line = line.strip()
-        if not line:
+    songs = []
+    for raw in text.strip().split('\n'):
+        line = raw.strip()
+        if not line or line.lower().startswith('playlist:'):
             continue
         for pattern in patterns:
             match = re.match(pattern, line, re.IGNORECASE)
             if match:
-                groups = match.groups()
-                songs.append({
-                    'title': groups[0].strip(),
-                    'artist': groups[1].strip() if len(groups) > 1 else '',
-                })
+                title = match.group(1).strip().strip('*').strip('"').strip()
+                artist = match.group(2).strip().strip('*').strip() if match.lastindex and match.lastindex >= 2 else ''
+                if title:
+                    songs.append({'title': title, 'artist': artist})
                 break
-
     return songs
 
 
@@ -67,69 +64,72 @@ def generate():
         return {'error': 'A non-empty prompt is required'}, 400
 
     prompt = data['prompt'].strip()
-    if len(prompt) > 500:
-        return {'error': 'Prompt must be 500 characters or fewer'}, 400
+    if len(prompt) > MAX_PROMPT_LEN:
+        return {'error': f'Prompt must be {MAX_PROMPT_LEN} characters or fewer'}, 400
 
-    api_key = Config.OPENAI_API_KEY
+    api_key = current_app.config.get('OPENAI_API_KEY')
     if not api_key:
-        return {'error': 'OpenAI API key not configured'}, 503
+        return {'error': 'AI playlist generation is not configured'}, 503
 
+    sp = get_spotify_client()  # PermissionError -> 401 via the central handler
+
+    # --- Ask OpenAI for song recommendations ---
     try:
-        sp = get_spotify_client()
-    except PermissionError:
-        return {'error': 'Not authenticated with Spotify'}, 401
+        client = OpenAI(api_key=api_key, timeout=30)
+        completion = client.chat.completions.create(
+            model='gpt-3.5-turbo',
+            messages=[
+                {
+                    'role': 'system',
+                    'content': (
+                        'You are MusicGPT, a world-class music recommendation AI. '
+                        'Given a description, recommend 10-30 songs. '
+                        'Format each song on its own line as: "Song Title" by Artist Name. '
+                        'Also suggest a creative playlist name on the first line, '
+                        'prefixed with "Playlist: ".'
+                    ),
+                },
+                {
+                    'role': 'user',
+                    'content': f'Create a playlist that fits: {prompt}',
+                },
+            ],
+            temperature=0.8,
+        )
+    except OpenAIError as exc:
+        logger.warning('OpenAI request failed: %s', exc)
+        return {'error': 'The AI service is unavailable right now. Please try again.'}, 502
 
-    # Ask OpenAI for song recommendations
-    client = OpenAI(api_key=api_key)
-    completion = client.chat.completions.create(
-        model='gpt-3.5-turbo',
-        messages=[
-            {
-                'role': 'system',
-                'content': (
-                    'You are MusicGPT, a world-class music recommendation AI. '
-                    'Given a description, recommend 10-30 songs. '
-                    'Format each song on its own line as: "Song Title" by Artist Name. '
-                    'Also suggest a creative playlist name on the first line, '
-                    'prefixed with "Playlist: ".'
-                ),
-            },
-            {
-                'role': 'user',
-                'content': f'Create a playlist that fits: {prompt}',
-            },
-        ],
-        temperature=0.8,
-    )
+    response_text = ''
+    if completion.choices:
+        response_text = completion.choices[0].message.content or ''
+    logger.info('AI response (first 200 chars): %s', response_text[:200])
 
-    response_text = completion.choices[0].message.content or ''
-    logger.info('AI response: %s', response_text[:200])
-
-    # Extract playlist name from first line
+    # Extract playlist name from the first line.
     lines = response_text.strip().split('\n')
     playlist_name = 'AI Generated Playlist'
     if lines and lines[0].lower().startswith('playlist:'):
-        playlist_name = lines[0].split(':', 1)[1].strip().strip('"')
+        playlist_name = lines[0].split(':', 1)[1].strip().strip('"') or playlist_name
 
-    # Parse songs
     songs = _parse_songs_from_text(response_text)
     if not songs:
-        return {
-            'error': 'Could not parse song recommendations from AI',
-            'raw_response': response_text,
-        }, 502
+        # Do NOT echo raw model output back to the client (avoids leaking prompt
+        # internals / unexpected content); log it server-side instead.
+        logger.warning('Could not parse songs from AI response')
+        return {'error': 'Could not read the AI recommendations. Try a different prompt.'}, 502
 
-    # Search Spotify for each song
+    # --- Search Spotify for each song (a single failed lookup is skipped, not fatal) ---
     track_ids = []
     matched_tracks = []
     for song in songs:
-        query = song.get('title', '')
-        artist = song.get('artist', '')
-        search_q = f'{query} {artist}'.strip()
+        search_q = f"{song.get('title', '')} {song.get('artist', '')}".strip()
         if not search_q:
             continue
-
-        results = sp.search(q=search_q, type='track', limit=1)
+        try:
+            results = sp.search(q=search_q, type='track', limit=1)
+        except SpotifyException as exc:
+            logger.warning('Spotify search failed for %r: %s', search_q, exc)
+            continue
         items = results.get('tracks', {}).get('items', [])
         if items:
             track = items[0]
@@ -144,11 +144,9 @@ def generate():
     if not track_ids:
         return {'error': 'No matching tracks found on Spotify'}, 404
 
-    # Create playlist
+    # --- Create the playlist (chunked) ---
     user_id = sp.current_user()['id']
-    playlist = sp.user_playlist_create(user_id, playlist_name, public=True)
-    uris = [f'spotify:track:{tid}' for tid in track_ids]
-    sp.user_playlist_add_tracks(user_id, playlist['id'], uris)
+    playlist = create_playlist_with_tracks(sp, user_id, playlist_name, track_ids, public=True)
 
     result = {
         'playlist_id': playlist['id'],
@@ -165,17 +163,15 @@ def generate():
 
 @ai_bp.route('/save', methods=['POST'])
 def save():
-    """Save a previously generated playlist to the user's library."""
+    """Save (follow) a previously generated playlist into the user's library."""
     data = request.get_json(silent=True)
     playlist_id = (data or {}).get('playlist_id') or session.get('playlist_id')
 
     if not playlist_id:
         return {'error': 'No playlist_id provided'}, 400
+    if not isinstance(playlist_id, str):
+        return {'error': 'playlist_id must be a string'}, 400
 
-    try:
-        sp = get_spotify_client()
-    except PermissionError:
-        return {'error': 'Not authenticated'}, 401
-
-    sp.current_user_follow_playlist(playlist_id)
+    sp = get_spotify_client()  # PermissionError -> 401 via the central handler
+    sp.current_user_follow_playlist(playlist_id)  # SpotifyException -> central handler
     return {'message': 'Playlist saved to library'}

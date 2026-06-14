@@ -1,0 +1,4 @@
+# Development / test dependencies (not installed in the production image).
+#   pip install -r server/requirements-dev.txt
+-r requirements.txt
+pytest>=8.0
