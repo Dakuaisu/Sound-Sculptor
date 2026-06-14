@@ -13,6 +13,11 @@ dist/
 build/
 .cache/
 
+# Spotify OAuth token cache (spotipy CacheFileHandler) — never commit
+.cache
+server/.cache
+**/.cache
+
 # ML model artifacts
 *.pkl
 *.csv
