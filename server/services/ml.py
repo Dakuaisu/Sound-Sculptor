@@ -32,12 +32,15 @@ def _load_model():
     if _model is not None:
         return
 
-    if not os.path.exists(MODEL_PATH):
+    # Use isfile (not exists): a missing bind-mounted volume is created by Docker
+    # as an empty *directory*, which would pass exists() and then crash joblib.load
+    # with an opaque 500 instead of the intended 503.
+    if not os.path.isfile(MODEL_PATH):
         raise FileNotFoundError(
             f'ML model not found at {MODEL_PATH}. '
             'Place model.pkl in the server/ directory.'
         )
-    if not os.path.exists(DATA_PATH):
+    if not os.path.isfile(DATA_PATH):
         raise FileNotFoundError(
             f'Training data not found at {DATA_PATH}. '
             'Place tracks_features.csv in the server/ directory.'
@@ -45,7 +48,9 @@ def _load_model():
 
     logger.info('Loading ML model from %s', MODEL_PATH)
     _model = joblib.load(MODEL_PATH)
-    train_data = pd.read_csv(DATA_PATH)
+    # Only the `id` column is needed (mapped positionally from KNN neighbor
+    # indices); loading the full feature table wastes memory per worker.
+    train_data = pd.read_csv(DATA_PATH, usecols=['id'])
     _y_train = train_data['id']
 
 
