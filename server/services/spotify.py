@@ -2,30 +2,23 @@ import time
 import spotipy
 from flask import session, current_app, url_for
 from spotipy.oauth2 import SpotifyOAuth
+from spotipy.cache_handler import MemoryCacheHandler
 
 TOKEN_INFO = 'token_info'
 
 def get_spotify_oauth():
     cfg = current_app.config
 
+    # Use an in-memory cache handler so spotipy never writes a `.cache` token
+    # file to disk. Passing cache_path=None does NOT disable caching — spotipy
+    # falls back to a default CacheFileHandler that writes `.cache` in the CWD.
     return SpotifyOAuth(
         client_id=cfg['SPOTIFY_CLIENT_ID'],
         client_secret=cfg['SPOTIFY_CLIENT_SECRET'],
         redirect_uri=url_for('auth.callback', _external=True),
         scope=cfg['SPOTIFY_SCOPES'],
-        cache_path=None,          
-        cache_handler=None 
+        cache_handler=MemoryCacheHandler(),
     )
-
-# def get_spotify_oauth():
-#     """Build a SpotifyOAuth instance from app config."""
-#     cfg = current_app.config
-#     return SpotifyOAuth(
-#         client_id=cfg['SPOTIFY_CLIENT_ID'],
-#         client_secret=cfg['SPOTIFY_CLIENT_SECRET'],
-#         redirect_uri=url_for('auth.callback', _external=True),
-#         scope=cfg['SPOTIFY_SCOPES'],
-#     )
 
 
 def get_token():
