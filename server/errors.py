@@ -16,6 +16,8 @@ from werkzeug.exceptions import HTTPException
 from spotipy.exceptions import SpotifyException
 from spotipy.oauth2 import SpotifyOauthError
 
+from server.services.ml import ModelArtifactError
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,6 +33,11 @@ def register_error_handlers(app):
     def _missing_artifact(exc):
         # Raised by the ML service when model.pkl / tracks_features.csv are absent.
         logger.error('Required model artifact missing: %s', exc)
+        return jsonify(error='The recommendation model is not available'), 503
+
+    @app.errorhandler(ModelArtifactError)
+    def _mismatched_artifacts(exc):
+        logger.error('Model artifacts are inconsistent: %s', exc)
         return jsonify(error='The recommendation model is not available'), 503
 
     @app.errorhandler(SpotifyException)

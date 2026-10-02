@@ -10,6 +10,10 @@ logger = logging.getLogger(__name__)
 _model = None
 _y_train = None
 
+
+class ModelArtifactError(Exception):
+    pass
+
 FEATURE_KEYS = [
     'danceability',
     'energy',
@@ -47,11 +51,26 @@ def _load_model():
         )
 
     logger.info('Loading ML model from %s', MODEL_PATH)
-    _model = joblib.load(MODEL_PATH)
+    model = joblib.load(MODEL_PATH)
     # Only the `id` column is needed (mapped positionally from KNN neighbor
     # indices); loading the full feature table wastes memory per worker.
-    train_data = pd.read_csv(DATA_PATH, usecols=['id'])
-    _y_train = train_data['id']
+    ids = pd.read_csv(DATA_PATH, usecols=['id'])['id']
+    _check_artifacts_match(model, ids)
+    _model, _y_train = model, ids
+
+
+def _check_artifacts_match(model, ids):
+    estimator = model.steps[-1][1] if hasattr(model, 'steps') else model
+    n_fit = getattr(estimator, 'n_samples_fit_', None)
+    if n_fit is not None and n_fit != len(ids):
+        raise ModelArtifactError(
+            f'model.pkl was fit on {n_fit} rows but tracks_features.csv has {len(ids)}'
+        )
+    names = getattr(model, 'feature_names_in_', None)
+    if names is not None and list(names) != FEATURE_KEYS:
+        raise ModelArtifactError(
+            f'model.pkl expects features {list(names)}, the API sends {FEATURE_KEYS}'
+        )
 
 
 def predict_songs(features: dict) -> list[str]:
