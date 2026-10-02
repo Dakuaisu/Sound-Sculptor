@@ -31,6 +31,9 @@ done' || true)
 [ -z "$root_gunicorn" ] || fail "gunicorn running as root (pids: $root_gunicorn)"
 echo "ok: gunicorn does not run as root"
 
+! docker logs "$NAME" 2>&1 | grep -q "Permission denied" || fail "permission errors in container logs"
+echo "ok: no permission errors in logs"
+
 docker exec "$NAME" sh -c 'kill -TERM $(for p in /proc/[0-9]*; do
   grep -q gunicorn "$p/cmdline" 2>/dev/null && echo "${p#/proc/}"; done | sort -n | head -1)'
 for _ in $(seq 1 15); do [ "$(docker inspect -f '{{.State.Running}}' "$NAME")" = false ] && break; sleep 1; done
