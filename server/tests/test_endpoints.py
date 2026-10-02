@@ -74,3 +74,34 @@ def test_unknown_route_returns_json_404(client):
 def test_dead_endpoints_removed(client):
     assert client.get('/api/user-data').status_code == 404
     assert client.post('/api/save-discover-weekly').status_code == 404
+
+
+_VALID_FEATURES = {
+    'danceability': 0.5, 'energy': 0.5, 'loudness': -8.0, 'acousticness': 0.2,
+    'instrumentalness': 0.0, 'tempo': 120.0, 'liveness': 0.1,
+}
+
+
+def test_predict_rejects_non_finite_values(client):
+    body = '{"danceability": Infinity, "energy": NaN, "loudness": -8, "acousticness": 0.2, ' \
+           '"instrumentalness": 0, "tempo": 120, "liveness": 0.1}'
+    resp = client.post('/api/predict', data=body, content_type='application/json')
+    assert resp.status_code == 400
+
+
+def test_predict_rejects_out_of_range_values(client):
+    for key, bad in [('danceability', 1.5), ('loudness', 5.0), ('tempo', 1000.0)]:
+        resp = client.post('/api/predict', json={**_VALID_FEATURES, key: bad})
+        assert resp.status_code == 400, key
+        assert key in resp.get_json()['error']
+
+
+def test_predict_accepts_slider_extremes(client, monkeypatch):
+    from server.blueprints import playlist
+    monkeypatch.setattr(playlist, 'predict_songs', lambda f: ['t1'])
+    lows = {'danceability': 0, 'energy': 0, 'loudness': -60, 'acousticness': 0,
+            'instrumentalness': 0, 'tempo': 40, 'liveness': 0}
+    highs = {'danceability': 1, 'energy': 1, 'loudness': 0, 'acousticness': 1,
+             'instrumentalness': 1, 'tempo': 220, 'liveness': 1}
+    assert client.post('/api/predict', json=lows).status_code == 200
+    assert client.post('/api/predict', json=highs).status_code == 200

@@ -1,3 +1,5 @@
+import math
+
 from flask import Blueprint, request, jsonify
 
 from server.services.spotify import get_spotify_client, create_playlist_with_tracks
@@ -6,6 +8,17 @@ from server.services.ml import predict_songs, FEATURE_KEYS
 playlist_bp = Blueprint('playlist', __name__, url_prefix='/api')
 
 MAX_TRACKS = 10000
+
+# Must match the slider mapping in soundfrnt/src/pages/SliderStep.jsx.
+FEATURE_RANGES = {
+    'danceability': (0.0, 1.0),
+    'energy': (0.0, 1.0),
+    'loudness': (-60.0, 0.0),
+    'acousticness': (0.0, 1.0),
+    'instrumentalness': (0.0, 1.0),
+    'tempo': (40.0, 220.0),
+    'liveness': (0.0, 1.0),
+}
 
 
 @playlist_bp.route('/predict', methods=['POST'])
@@ -27,6 +40,11 @@ def predict():
         features = {k: float(data[k]) for k in FEATURE_KEYS}
     except (ValueError, TypeError) as exc:
         return {'error': f'Invalid feature value: {exc}'}, 400
+
+    for key, value in features.items():
+        low, high = FEATURE_RANGES[key]
+        if not math.isfinite(value) or not low <= value <= high:
+            return {'error': f'{key} must be between {low} and {high}'}, 400
 
     song_ids = predict_songs(features)
     return jsonify({'recommended_song_ids': song_ids})
