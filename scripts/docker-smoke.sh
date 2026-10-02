@@ -5,7 +5,8 @@ set -euo pipefail
 IMAGE=sound-sculptor-smoke
 PORT=${PORT:-18080}
 NAME=ss-smoke-$$
-fail() { echo "FAIL: $*"; docker rm -f "$NAME" >/dev/null 2>&1 || true; exit 1; }
+trap 'docker rm -f "$NAME" >/dev/null 2>&1 || true' EXIT
+fail() { echo "FAIL: $*"; exit 1; }
 
 docker build -q -t "$IMAGE" . >/dev/null
 
@@ -22,5 +23,18 @@ for path in / "$asset" /api/health; do
 done
 echo "ok: security headers on /, $asset, /api/health"
 
+docker exec "$NAME" sh -c 'kill -TERM $(for p in /proc/[0-9]*; do
+  grep -q gunicorn "$p/cmdline" 2>/dev/null && echo "${p#/proc/}"; done | sort -n | head -1)'
+for _ in $(seq 1 15); do [ "$(docker inspect -f '{{.State.Running}}' "$NAME")" = false ] && break; sleep 1; done
+[ "$(docker inspect -f '{{.State.Running}}' "$NAME")" = false ] || fail "container kept running after gunicorn exited"
+echo "ok: container exits when gunicorn exits"
 docker rm -f "$NAME" >/dev/null
+
+docker run -d --name "$NAME" -e SECRET_KEY=change-me-to-a-random-string -e FLASK_ENV=development \
+  -e CLIENT_ID=x -e CLIENT_SECRET=x "$IMAGE" >/dev/null
+for _ in $(seq 1 20); do [ "$(docker inspect -f '{{.State.Running}}' "$NAME")" = false ] && break; sleep 1; done
+[ "$(docker inspect -f '{{.State.Running}}' "$NAME")" = false ] || fail "container started with the placeholder SECRET_KEY"
+echo "ok: container refuses the placeholder SECRET_KEY"
+docker rm -f "$NAME" >/dev/null
+
 echo "PASS"

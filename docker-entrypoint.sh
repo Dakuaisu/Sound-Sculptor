@@ -13,6 +13,14 @@ gunicorn "server.app:create_app()" \
     --access-logfile - \
     --error-logfile - &
 
-# Start Nginx in foreground
 echo "Starting Nginx..."
-nginx -g "daemon off;"
+nginx -g "daemon off;" &
+
+# Exit when either process dies so the container's restart policy applies.
+trap 'kill -TERM $(jobs -p) 2>/dev/null' TERM INT
+set +e
+wait -n
+status=$?
+kill -TERM $(jobs -p) 2>/dev/null
+wait
+exit "$status"
