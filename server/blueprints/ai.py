@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import unicodedata
 
 from flask import Blueprint, request, session, current_app
 from openai import OpenAI, OpenAIError
@@ -13,6 +14,29 @@ logger = logging.getLogger(__name__)
 ai_bp = Blueprint('ai', __name__, url_prefix='/api/ai')
 
 MAX_PROMPT_LEN = 500
+SEARCH_LIMIT = 5
+
+
+def _norm(name: str) -> str:
+    decomposed = unicodedata.normalize('NFKD', name)
+    return ''.join(c for c in decomposed if c.isalnum()).lower()
+
+
+def _pick_matching_track(items: list[dict], artist: str) -> dict | None:
+    """Return the first search hit whose artist matches the LLM-named artist.
+
+    The model can name songs that don't exist; Spotify search still returns
+    *something*, so an unverified top hit would silently add an unrelated song.
+    """
+    wanted = _norm(artist or '')
+    if not wanted:
+        return None
+    for track in items:
+        for a in track.get('artists', []):
+            got = _norm(a.get('name', ''))
+            if got and (got in wanted or wanted in got):
+                return track
+    return None
 
 
 def _parse_songs_from_text(text: str) -> list[dict]:
@@ -126,13 +150,12 @@ def generate():
         if not search_q:
             continue
         try:
-            results = sp.search(q=search_q, type='track', limit=1)
+            results = sp.search(q=search_q, type='track', limit=SEARCH_LIMIT)
         except SpotifyException as exc:
             logger.warning('Spotify search failed for %r: %s', search_q, exc)
             continue
-        items = results.get('tracks', {}).get('items', [])
-        if items:
-            track = items[0]
+        track = _pick_matching_track(results.get('tracks', {}).get('items', []), song.get('artist', ''))
+        if track:
             track_ids.append(track['id'])
             matched_tracks.append({
                 'id': track['id'],
