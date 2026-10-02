@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DEV_SECRET_KEY = 'dev-fallback-change-me'
+PLACEHOLDER_SECRET_KEYS = {DEV_SECRET_KEY, 'change-me-to-a-random-string'}
 
 
 def _flag(name, default=False):
@@ -55,7 +56,7 @@ class Config:
 
         problems = []
         secret = app.config.get('SECRET_KEY')
-        if not secret or secret == DEV_SECRET_KEY:
+        if not secret or secret in PLACEHOLDER_SECRET_KEYS:
             problems.append('SECRET_KEY must be set to a strong, unique value')
         if not app.config.get('SPOTIFY_CLIENT_ID') or not app.config.get('SPOTIFY_CLIENT_SECRET'):
             problems.append('CLIENT_ID and CLIENT_SECRET must be set')

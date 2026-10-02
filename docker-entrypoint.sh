@@ -5,6 +5,7 @@ echo "Starting Sound Sculptor..."
 
 # Start Gunicorn (Flask backend) in background
 cd /app
+export FLASK_ENV=production
 gunicorn "server.app:create_app()" \
     --bind 127.0.0.1:5000 \
     --workers 2 \
