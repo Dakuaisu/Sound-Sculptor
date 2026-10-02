@@ -105,3 +105,11 @@ def test_predict_accepts_slider_extremes(client, monkeypatch):
              'instrumentalness': 1, 'tempo': 220, 'liveness': 1}
     assert client.post('/api/predict', json=lows).status_code == 200
     assert client.post('/api/predict', json=highs).status_code == 200
+
+
+def test_logout_clears_spotify_token(client):
+    with client.session_transaction() as sess:
+        sess['token_info'] = {'access_token': 'x', 'refresh_token': 'y', 'expires_at': 9999999999}
+    assert client.post('/api/logout').status_code == 200
+    with client.session_transaction() as sess:
+        assert 'token_info' not in sess

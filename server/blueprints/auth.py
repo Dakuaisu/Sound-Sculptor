@@ -69,3 +69,9 @@ def me():
         'display_name': user.get('display_name'),
         'images': user.get('images', []),
     }
+
+
+@auth_bp.route('/logout', methods=['POST'])
+def logout():
+    session.clear()
+    return {'message': 'Disconnected'}

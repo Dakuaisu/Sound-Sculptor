@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, LogOut } from 'lucide-react'
 import Logo from '@/components/brand/Logo'
 import Button from '@/components/ui/Button'
 import useStore from '@/stores/useStore'
+import api from '@/services/api'
 import { cn } from '@/lib/cn'
 
 const NAV = [
@@ -15,7 +16,7 @@ const NAV = [
 export default function Header() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { isAuthenticated, user } = useStore()
+  const { isAuthenticated, user, logout, setError } = useStore()
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -29,6 +30,16 @@ export default function Header() {
   useEffect(() => setMenuOpen(false), [location.pathname])
 
   const avatarUrl = user?.images?.[0]?.url
+
+  async function disconnect() {
+    try {
+      await api.logout()
+      logout()
+      navigate('/')
+    } catch (err) {
+      setError(err.message)
+    }
+  }
 
   return (
     <header
@@ -78,6 +89,14 @@ export default function Header() {
                 <span className="max-w-[10ch] truncate text-body-sm text-text-2">
                   {user?.display_name || 'Connected'}
                 </span>
+                <button
+                  onClick={disconnect}
+                  aria-label="Disconnect Spotify"
+                  title="Disconnect Spotify"
+                  className="ml-1 rounded-full p-1 text-text-3 transition-colors hover:text-text-1"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
               </div>
             ) : (
               <Button size="sm" variant="secondary" onClick={() => navigate('/connect')}>
@@ -116,7 +135,11 @@ export default function Header() {
                   {label}
                 </Link>
               ))}
-              {!isAuthenticated && (
+              {isAuthenticated ? (
+                <Button className="mt-2" variant="secondary" onClick={disconnect}>
+                  <LogOut className="h-4 w-4" /> Disconnect Spotify
+                </Button>
+              ) : (
                 <Button className="mt-2" onClick={() => navigate('/connect')}>
                   Connect Spotify
                 </Button>

@@ -22,6 +22,7 @@ async function request(endpoint, options = {}) {
 export const api = {
   // Auth
   getUser: () => request('/me'),
+  logout: () => request('/logout', { method: 'POST' }),
 
   // Playlist generation (ML-based)
   predict: (features) =>
