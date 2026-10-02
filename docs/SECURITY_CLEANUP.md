@@ -1,5 +1,29 @@
 # Removing the leaked Spotify token from git history
 
+## Status (2026-10-02)
+
+History was rewritten and force-pushed on 2026-10-02:
+
+- `git filter-repo --sensitive-data-removal --invert-paths --path server/.cache` removed
+  the token.
+- A message callback also stripped a `Co-Authored-By` trailer from `01b48e8`.
+- gitleaks reports no leaks across the full history, and `.gitleaksignore` is deleted.
+- Every commit hash changed. Old → new: `92e6245` → `38856a5` (first changed commit),
+  `4a0b100` → `fe1815b`, `01b48e8` → `8045d4a`, `fc5038b` → `679340f`.
+
+**Still to do (needs the repo owner's GitHub login):** open a GitHub Support ticket to
+dereference PR refs `refs/pull/1/head` (old `34c5d5f`) and `refs/pull/2/head` (old
+`dacb85b`) and to clear cached views. Include:
+- the repository: `Dakuaisu/Sound-Sculptor`
+- the number of affected PRs: 2
+- the first changed commit: `92e6245f5c71b87e784b126775651cbbb5e79751`
+
+Until Support does this, the old commits stay reachable through those PR refs and by SHA.
+
+Old clones still contain the token. Re-clone rather than pulling.
+
+The steps below record how it was done.
+
 ## What leaked
 
 `server/.cache` (spotipy's token cache) was committed in `92e6245` (initial commit) and
