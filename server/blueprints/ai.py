@@ -146,7 +146,6 @@ def generate():
                     'content': f'Create a playlist that fits: {prompt}',
                 },
             ],
-            temperature=0.8,
             max_completion_tokens=current_app.config['OPENAI_MAX_COMPLETION_TOKENS'],
             response_format={'type': 'json_schema', 'json_schema': PLAYLIST_SCHEMA},
         )

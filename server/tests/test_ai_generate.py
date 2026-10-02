@@ -189,3 +189,9 @@ def test_featured_artist_credits_still_match(client, fakes):
     fakes.search_results = {_q('Work', 'Rihanna feat. Drake'): [_track('w', 'Work', 'Rihanna', 'Drake')]}
     assert client.post('/api/ai/generate', json={'prompt': 'x'}).status_code == 200
     assert fakes.create_calls == [['w']]
+
+
+def test_does_not_send_temperature(client, fakes):
+    fakes.llm_text = _llm(('Clocks', 'Coldplay'))
+    client.post('/api/ai/generate', json={'prompt': 'x'})
+    assert 'temperature' not in fakes.openai_kwargs
