@@ -71,49 +71,40 @@ def _match_songs(sp, songs: list[dict]) -> list[dict]:
     return results
 
 
-def _parse_songs_from_text(text: str) -> list[dict]:
-    """Extract song entries from the AI response text.
+PLAYLIST_SCHEMA = {
+    'name': 'playlist',
+    'strict': True,
+    'schema': {
+        'type': 'object',
+        'properties': {
+            'playlist_name': {'type': 'string'},
+            'songs': {
+                'type': 'array',
+                'items': {
+                    'type': 'object',
+                    'properties': {'title': {'type': 'string'}, 'artist': {'type': 'string'}},
+                    'required': ['title', 'artist'],
+                    'additionalProperties': False,
+                },
+            },
+        },
+        'required': ['playlist_name', 'songs'],
+        'additionalProperties': False,
+    },
+}
 
-    Handles common formats: ``"Song" by Artist``, ``1. Song - Artist``,
-    ``- Song by Artist`` (bullets), ``**Song** by Artist`` (markdown), and a
-    structured JSON ``{"songs": [...]}`` fast-path.
-    """
-    # Structured JSON fast-path (in case the model returns structured data).
-    try:
-        parsed = json.loads(text)
-        if isinstance(parsed, dict):
-            parsed = parsed.get('songs')
-        if isinstance(parsed, list):
-            return [
-                {'title': s['title'].strip(), 'artist': str(s.get('artist') or '').strip()}
-                for s in parsed
-                if isinstance(s, dict) and isinstance(s.get('title'), str) and s['title'].strip()
-            ]
-    except (json.JSONDecodeError, TypeError):
-        pass
 
-    patterns = [
-        r'^\d+[.)]\s*"([^"]+)"\s*(?:by|[-–—])\s*(.+)',   # 1. "Song" by Artist
-        r'"([^"]+)"\s*(?:by|[-–—])\s*(.+)',              # "Song" by Artist
-        r'^\s*[-*•]\s*(.+?)\s*(?:by|[-–—])\s*(.+)',       # - Song by/— Artist (bullets)
-        r'^\d+[.)]\s*(.+?)\s*(?:by|[-–—])\s*(.+)',        # 1. Song - Artist
-        r'^(.+?)\s+(?:by|[-–—])\s+(.+)$',                 # Song by/— Artist (loose)
+def _songs_from_payload(payload) -> list[dict]:
+    """Keep only well-formed {title, artist} entries; the schema is enforced, but never trust it blindly."""
+    songs = payload.get('songs') if isinstance(payload, dict) else None
+    if not isinstance(songs, list):
+        return []
+    return [
+        {'title': s['title'].strip(), 'artist': s['artist'].strip()}
+        for s in songs
+        if isinstance(s, dict) and isinstance(s.get('title'), str) and isinstance(s.get('artist'), str)
+        and s['title'].strip() and s['artist'].strip()
     ]
-
-    songs = []
-    for raw in text.strip().split('\n'):
-        line = raw.strip()
-        if not line or line.lower().startswith('playlist:'):
-            continue
-        for pattern in patterns:
-            match = re.match(pattern, line, re.IGNORECASE)
-            if match:
-                title = match.group(1).strip().strip('*').strip('"').strip()
-                artist = match.group(2).strip().strip('*').strip() if match.lastindex and match.lastindex >= 2 else ''
-                if title:
-                    songs.append({'title': title, 'artist': artist})
-                break
-    return songs
 
 
 @ai_bp.route('/generate', methods=['POST'])
@@ -129,7 +120,9 @@ def generate():
         return {'error': f'Prompt must be {MAX_PROMPT_LEN} characters or fewer'}, 400
 
     api_key = current_app.config.get('OPENAI_API_KEY')
-    if not api_key:
+    model = current_app.config.get('OPENAI_MODEL')
+    if not api_key or not model:
+        logger.error('AI generation needs OPENAI_API_KEY and OPENAI_MODEL to be set')
         return {'error': 'AI playlist generation is not configured'}, 503
 
     sp = get_spotify_client()  # PermissionError -> 401 via the central handler
@@ -138,16 +131,14 @@ def generate():
     try:
         client = OpenAI(api_key=api_key, timeout=30)
         completion = client.chat.completions.create(
-            model=current_app.config['OPENAI_MODEL'],
+            model=model,
             messages=[
                 {
                     'role': 'system',
                     'content': (
-                        'You are MusicGPT, a world-class music recommendation AI. '
-                        'Given a description, recommend 10-30 songs. '
-                        'Format each song on its own line as: "Song Title" by Artist Name. '
-                        'Also suggest a creative playlist name on the first line, '
-                        'prefixed with "Playlist: ".'
+                        'You are a music recommendation assistant. Given a description, '
+                        'recommend 10-30 real, released songs that exist on Spotify, each with '
+                        'its primary credited artist, and suggest a creative playlist name.'
                     ),
                 },
                 {
@@ -157,28 +148,28 @@ def generate():
             ],
             temperature=0.8,
             max_completion_tokens=current_app.config['OPENAI_MAX_COMPLETION_TOKENS'],
+            response_format={'type': 'json_schema', 'json_schema': PLAYLIST_SCHEMA},
         )
     except OpenAIError as exc:
         logger.warning('OpenAI request failed: %s', exc)
         return {'error': 'The AI service is unavailable right now. Please try again.'}, 502
 
-    response_text = ''
-    if completion.choices:
-        response_text = completion.choices[0].message.content or ''
-    logger.info('AI response (first 200 chars): %s', response_text[:200])
-
-    # Extract playlist name from the first line.
-    lines = response_text.strip().split('\n')
-    playlist_name = 'AI Generated Playlist'
-    if lines and lines[0].lower().startswith('playlist:'):
-        playlist_name = lines[0].split(':', 1)[1].strip().strip('"') or playlist_name
-
-    songs = _parse_songs_from_text(response_text)
-    if not songs:
-        # Do NOT echo raw model output back to the client (avoids leaking prompt
-        # internals / unexpected content); log it server-side instead.
-        logger.warning('Could not parse songs from AI response')
+    message = completion.choices[0].message if completion.choices else None
+    if message is None or message.refusal:
+        logger.warning('AI declined the request: %s', getattr(message, 'refusal', None))
+        return {'error': "The AI couldn't create a playlist for that prompt. Try a different one."}, 502
+    try:
+        payload = json.loads(message.content or '')
+    except json.JSONDecodeError:
+        # e.g. finish_reason == 'length' cuts the JSON off mid-way.
+        logger.warning('AI returned invalid JSON (finish_reason=%s)', completion.choices[0].finish_reason)
         return {'error': 'Could not read the AI recommendations. Try a different prompt.'}, 502
+
+    songs = _songs_from_payload(payload)
+    if not songs:
+        logger.warning('AI response contained no usable songs')
+        return {'error': 'Could not read the AI recommendations. Try a different prompt.'}, 502
+    playlist_name = str(payload.get('playlist_name') or '').strip() or 'AI Generated Playlist'
 
     statuses = _match_songs(sp, songs)
     matched_tracks = []

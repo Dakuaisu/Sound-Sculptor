@@ -8,7 +8,7 @@ AI-powered playlist generator that combines Spotify, machine learning, and an Op
 
 1. **Sculpt It Yourself** — Pick your mood, fine-tune audio sliders (danceability, energy, acousticness, instrumentalness, loudness, tempo, liveness), and get the closest matches from a nearest-neighbour index of 1.2M tracks. KNN doesn't learn anything: the seven audio features of every track are standardized (zero mean, unit variance, so no feature dominates the distance) and indexed. Your slider settings become a point in that space, and the nearest tracks by Euclidean distance form the playlist.
 
-2. **AI Generated** — Describe what you want in plain text ("chill vibes for a rainy afternoon"). An OpenAI model (configurable via `OPENAI_MODEL`) suggests songs; each is looked up on Spotify and kept only if the artist matches, so invented songs are dropped.
+2. **AI Generated** — Describe what you want in plain text ("chill vibes for a rainy afternoon"). The OpenAI model named in `OPENAI_MODEL` (required, no default; it must support strict `json_schema` structured outputs) returns `{playlist_name, songs: [{title, artist}]}`. Each song is searched on Spotify with `track:`/`artist:` filters and kept only if a credited artist matches. The response reports every song as `matched`, `not_found` or `search_failed`, plus the overall `match_rate`, so invented songs are dropped, never swapped for something else.
 
 Both flows create a private playlist in your Spotify account.
 

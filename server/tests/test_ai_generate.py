@@ -2,6 +2,7 @@
 
 All model output and search results below are synthetic fixtures.
 """
+import json
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -18,10 +19,15 @@ def _q(title, artist):
     return f'track:{title} artist:{artist}'
 
 
+def _llm(*songs, name='Test Mix'):
+    """Synthetic structured model output."""
+    return json.dumps({'playlist_name': name, 'songs': [{'title': t, 'artist': a} for t, a in songs]})
+
+
 @pytest.fixture
 def fakes(app, monkeypatch):
-    app.config['OPENAI_API_KEY'] = 'test-key'
-    state = SimpleNamespace(llm_text='', search_results={}, create_calls=[])
+    app.config.update(OPENAI_API_KEY='test-key', OPENAI_MODEL='test-model')
+    state = SimpleNamespace(llm_text='', refusal=None, search_results={}, create_calls=[], openai_kwargs=None)
 
     class FakeOpenAI:
         def __init__(self, **_kwargs):
@@ -29,8 +35,8 @@ def fakes(app, monkeypatch):
 
         def _create(self, **kwargs):
             state.openai_kwargs = kwargs
-            msg = SimpleNamespace(content=state.llm_text)
-            return SimpleNamespace(choices=[SimpleNamespace(message=msg)])
+            msg = SimpleNamespace(content=state.llm_text, refusal=state.refusal)
+            return SimpleNamespace(choices=[SimpleNamespace(message=msg, finish_reason='stop')])
 
     sp = MagicMock()
     def search(q, **_kw):
@@ -53,7 +59,7 @@ def fakes(app, monkeypatch):
 
 
 def test_rejects_top_hit_by_a_different_artist(client, fakes):
-    fakes.llm_text = 'Playlist: Test\n"Made Up Song" by Real Artist\n"Yellow" by Coldplay'
+    fakes.llm_text = _llm(('Made Up Song', 'Real Artist'), ('Yellow', 'Coldplay'))
     fakes.search_results = {
         _q('Made Up Song', 'Real Artist'): [_track('wrong', 'Made Up', 'Someone Else')],
         _q('Yellow', 'Coldplay'): [_track('cover', 'Yellow', 'Karaoke Band'), _track('real', 'Yellow', 'Coldplay')],
@@ -65,39 +71,57 @@ def test_rejects_top_hit_by_a_different_artist(client, fakes):
 
 
 def test_artist_match_ignores_case_and_accents(client, fakes):
-    fakes.llm_text = '"Halo" by beyonce'
+    fakes.llm_text = _llm(('Halo', 'beyonce'))
     fakes.search_results = {_q('Halo', 'beyonce'): [_track('h', 'Halo', 'Beyoncé')]}
     assert client.post('/api/ai/generate', json={'prompt': 'x'}).status_code == 200
     assert fakes.create_calls == [['h']]
 
 
-def test_prose_lines_do_not_become_tracks(client, fakes):
-    fakes.llm_text = 'Here are some tracks curated by me for you:\n"Clocks" by Coldplay'
-    fakes.search_results = {
-        _q('Here are some tracks curated', 'me for you:'): [_track('junk', 'Curated', 'Some Band')],
-        _q('Clocks', 'Coldplay'): [_track('c', 'Clocks', 'Coldplay')],
-    }
-    assert client.post('/api/ai/generate', json={'prompt': 'x'}).status_code == 200
-    assert fakes.create_calls == [['c']]
-
-
 def test_no_verified_matches_returns_404_without_creating_playlist(client, fakes):
-    fakes.llm_text = '"Ghost Song" by Nobody Real'
+    fakes.llm_text = _llm(('Ghost Song', 'Nobody Real'))
     fakes.search_results = {_q('Ghost Song', 'Nobody Real'): [_track('x', 'Ghost', 'Other')]}
     assert client.post('/api/ai/generate', json={'prompt': 'x'}).status_code == 404
     assert fakes.create_calls == []
 
 
-def test_malformed_json_from_model_is_not_a_500(client, fakes):
-    fakes.llm_text = '["Yellow by Coldplay"]'
+def test_invalid_json_from_model_is_502_not_500(client, fakes):
+    fakes.llm_text = '{"playlist_name": "cut off mid-'
     resp = client.post('/api/ai/generate', json={'prompt': 'x'})
     assert resp.status_code == 502
     assert 'error' in resp.get_json()
 
 
+def test_refusal_is_502_with_message(client, fakes):
+    fakes.refusal = 'I cannot help with that.'
+    resp = client.post('/api/ai/generate', json={'prompt': 'x'})
+    assert resp.status_code == 502
+    assert fakes.create_calls == []
+
+
+def test_requests_strict_json_schema_output(client, fakes):
+    fakes.llm_text = _llm(('Clocks', 'Coldplay'))
+    fakes.search_results = {_q('Clocks', 'Coldplay'): [_track('c', 'Clocks', 'Coldplay')]}
+    client.post('/api/ai/generate', json={'prompt': 'x'})
+    fmt = fakes.openai_kwargs['response_format']
+    assert fmt['type'] == 'json_schema'
+    assert fmt['json_schema']['strict'] is True
+
+
+def test_playlist_name_comes_from_structured_output(client, fakes):
+    fakes.llm_text = _llm(('Clocks', 'Coldplay'), name='Rainy Day')
+    fakes.search_results = {_q('Clocks', 'Coldplay'): [_track('c', 'Clocks', 'Coldplay')]}
+    assert client.post('/api/ai/generate', json={'prompt': 'x'}).get_json()['playlist_name'] == 'Rainy Day'
+
+
+def test_missing_model_id_is_503_without_calling_openai(app, client, fakes):
+    app.config['OPENAI_MODEL'] = None
+    assert client.post('/api/ai/generate', json={'prompt': 'x'}).status_code == 503
+    assert fakes.openai_kwargs is None
+
+
 def test_model_and_token_cap_come_from_config(app, client, fakes):
     app.config.update(OPENAI_MODEL='configured-model', OPENAI_MAX_COMPLETION_TOKENS=123)
-    fakes.llm_text = '"Clocks" by Coldplay'
+    fakes.llm_text = _llm(('Clocks', 'Coldplay'))
     fakes.search_results = {_q('Clocks', 'Coldplay'): [_track('c', 'Clocks', 'Coldplay')]}
     client.post('/api/ai/generate', json={'prompt': 'x'})
     assert fakes.openai_kwargs['model'] == 'configured-model'
@@ -105,7 +129,7 @@ def test_model_and_token_cap_come_from_config(app, client, fakes):
 
 
 def test_same_track_suggested_twice_is_listed_once(client, fakes):
-    fakes.llm_text = '"Clocks" by Coldplay\n1. Clocks - Coldplay'
+    fakes.llm_text = _llm(('Clocks', 'Coldplay'), ('Clocks', 'Coldplay'))
     fakes.search_results = {_q('Clocks', 'Coldplay'): [_track('c', 'Clocks', 'Coldplay')]}
     body = client.post('/api/ai/generate', json={'prompt': 'x'}).get_json()
     assert fakes.create_calls == [['c']]
@@ -114,7 +138,7 @@ def test_same_track_suggested_twice_is_listed_once(client, fakes):
 
 def test_generate_is_rate_limited_with_json_429(app, client, fakes):
     app.config['AI_RATE_LIMIT'] = '2 per minute'
-    fakes.llm_text = '"Clocks" by Coldplay'
+    fakes.llm_text = _llm(('Clocks', 'Coldplay'))
     fakes.search_results = {_q('Clocks', 'Coldplay'): [_track('c', 'Clocks', 'Coldplay')]}
     codes = [client.post('/api/ai/generate', json={'prompt': 'x'}).status_code for _ in range(3)]
     assert codes == [200, 200, 429]
@@ -123,7 +147,7 @@ def test_generate_is_rate_limited_with_json_429(app, client, fakes):
 
 
 def test_search_uses_track_and_artist_filters_with_several_results(client, fakes):
-    fakes.llm_text = '"Clocks" by Coldplay'
+    fakes.llm_text = _llm(('Clocks', 'Coldplay'))
     fakes.search_results = {_q('Clocks', 'Coldplay'): [_track('c', 'Clocks', 'Coldplay')]}
     client.post('/api/ai/generate', json={'prompt': 'x'})
     fakes.sp.search.assert_called_once_with(q='track:Clocks artist:Coldplay', type='track', limit=10)
@@ -131,7 +155,7 @@ def test_search_uses_track_and_artist_filters_with_several_results(client, fakes
 
 def test_reports_per_song_status_and_match_rate(client, fakes):
     from spotipy.exceptions import SpotifyException
-    fakes.llm_text = '"Clocks" by Coldplay\n"Invented Tune" by Coldplay\n"Halo" by Beyonce'
+    fakes.llm_text = _llm(('Clocks', 'Coldplay'), ('Invented Tune', 'Coldplay'), ('Halo', 'Beyonce'))
     fakes.search_results = {
         _q('Clocks', 'Coldplay'): [_track('c', 'Clocks', 'Coldplay')],
         _q('Invented Tune', 'Coldplay'): [_track('y', 'Yellow', 'Coldplay Tribute')],
@@ -146,7 +170,7 @@ def test_reports_per_song_status_and_match_rate(client, fakes):
 
 
 def test_404_still_reports_which_songs_were_not_found(client, fakes):
-    fakes.llm_text = '"Ghost Song" by Nobody Real'
+    fakes.llm_text = _llm(('Ghost Song', 'Nobody Real'))
     resp = client.post('/api/ai/generate', json={'prompt': 'x'})
     assert resp.status_code == 404
     body = resp.get_json()
@@ -155,13 +179,13 @@ def test_404_still_reports_which_songs_were_not_found(client, fakes):
 
 
 def test_artist_must_match_exactly_after_normalization(client, fakes):
-    fakes.llm_text = '"One" by U2'
+    fakes.llm_text = _llm(('One', 'U2'))
     fakes.sp.search.side_effect = lambda q, **_kw: {'tracks': {'items': [_track('t', 'One', 'U2 Tribute Band')]}}
     assert client.post('/api/ai/generate', json={'prompt': 'x'}).status_code == 404
 
 
 def test_featured_artist_credits_still_match(client, fakes):
-    fakes.llm_text = '"Work" by Rihanna feat. Drake'
+    fakes.llm_text = _llm(('Work', 'Rihanna feat. Drake'))
     fakes.search_results = {_q('Work', 'Rihanna feat. Drake'): [_track('w', 'Work', 'Rihanna', 'Drake')]}
     assert client.post('/api/ai/generate', json={'prompt': 'x'}).status_code == 200
     assert fakes.create_calls == [['w']]

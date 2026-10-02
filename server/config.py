@@ -46,7 +46,8 @@ class Config:
     SPOTIFY_SCOPES = 'playlist-modify-private playlist-modify-public'
 
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-    OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')
+    # No default: must be a model that supports strict json_schema structured outputs.
+    OPENAI_MODEL = os.environ.get('OPENAI_MODEL')
     OPENAI_MAX_COMPLETION_TOKENS = int(os.environ.get('OPENAI_MAX_COMPLETION_TOKENS', '1000'))
     PREDICT_N = int(os.environ.get('PREDICT_N', '20'))
     AI_RATE_LIMIT = os.environ.get('AI_RATE_LIMIT', '5 per minute;50 per day')
