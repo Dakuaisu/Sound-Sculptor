@@ -2,6 +2,7 @@ import logging
 
 from flask import Flask, jsonify
 from flask_cors import CORS
+from flask_session import Session
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from server.config import Config
@@ -14,6 +15,7 @@ def create_app(config=None):
 
     _configure_logging()
     Config.validate(app)
+    Session(app)
 
     # Trust reverse proxy headers (nginx) so url_for generates correct URLs.
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)

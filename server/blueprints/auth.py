@@ -52,6 +52,7 @@ def callback():
         return redirect(f'{frontend_url}/connect')
 
     session[TOKEN_INFO] = token_info
+    current_app.session_interface.regenerate(session)
     return redirect(f'{frontend_url}/choice')
 
 

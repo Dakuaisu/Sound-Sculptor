@@ -1,4 +1,7 @@
 import os
+import tempfile
+
+from cachelib import FileSystemCache
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -27,6 +30,15 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     SESSION_COOKIE_SECURE = _flag('SESSION_COOKIE_SECURE', False)
+
+    # Server-side sessions: the cookie holds only a random session id, and the
+    # Spotify tokens stay on the server (Flask's default cookie is readable).
+    SESSION_TYPE = 'cachelib'
+    SESSION_PERMANENT = False
+    SESSION_CACHELIB = FileSystemCache(
+        os.environ.get('SESSION_DIR', os.path.join(tempfile.gettempdir(), 'sound-sculptor-sessions')),
+        mode=0o600,
+    )
 
     SPOTIFY_CLIENT_ID = os.environ.get('CLIENT_ID')
     SPOTIFY_CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
