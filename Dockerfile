@@ -22,6 +22,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends nginx curl && \
     rm -rf /var/lib/apt/lists/*
 
+RUN useradd --system --no-create-home --shell /usr/sbin/nologin app
+
 WORKDIR /app
 
 # Install Python dependencies

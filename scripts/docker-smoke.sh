@@ -23,6 +23,14 @@ for path in / "$asset" /api/health; do
 done
 echo "ok: security headers on /, $asset, /api/health"
 
+root_gunicorn=$(docker exec "$NAME" sh -c 'for p in /proc/[0-9]*; do
+  argv0=$(tr "\0" "\n" < "$p/cmdline" 2>/dev/null | head -1)
+  case "$argv0" in *python*) ;; *) continue ;; esac
+  grep -q gunicorn "$p/cmdline" && grep -q "^Uid:[[:space:]]*0[[:space:]]" "$p/status" && echo "${p#/proc/}"
+done' || true)
+[ -z "$root_gunicorn" ] || fail "gunicorn running as root (pids: $root_gunicorn)"
+echo "ok: gunicorn does not run as root"
+
 docker exec "$NAME" sh -c 'kill -TERM $(for p in /proc/[0-9]*; do
   grep -q gunicorn "$p/cmdline" 2>/dev/null && echo "${p#/proc/}"; done | sort -n | head -1)'
 for _ in $(seq 1 15); do [ "$(docker inspect -f '{{.State.Running}}' "$NAME")" = false ] && break; sleep 1; done
