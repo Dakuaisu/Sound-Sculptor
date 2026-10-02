@@ -77,6 +77,13 @@ Open http://127.0.0.1
 
 > **Note:** docker-compose mounts `./model.pkl` and `./tracks_features.csv` from the project root into `server/`. Without them the AI flow still works and `/api/predict` returns 503.
 
+### Deploying beyond your machine
+
+The image serves plain HTTP on port 80. Put it behind a TLS-terminating proxy, then:
+
+- set `SESSION_COOKIE_SECURE=1` so the session cookie is only sent over HTTPS;
+- set `FRONTEND_URL` and `SPOTIFY_REDIRECT_URI` to your `https://` origin.
+
 ### Spotify OAuth Setup
 
 Add these redirect URIs in your [Spotify Dashboard](https://developer.spotify.com/dashboard) and set `SPOTIFY_REDIRECT_URI` to the one you use:
