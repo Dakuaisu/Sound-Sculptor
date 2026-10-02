@@ -83,3 +83,12 @@ def test_malformed_json_from_model_is_not_a_500(client, fakes):
     resp = client.post('/api/ai/generate', json={'prompt': 'x'})
     assert resp.status_code == 502
     assert 'error' in resp.get_json()
+
+
+def test_model_and_token_cap_come_from_config(app, client, fakes):
+    app.config.update(OPENAI_MODEL='configured-model', OPENAI_MAX_COMPLETION_TOKENS=123)
+    fakes.llm_text = '"Clocks" by Coldplay'
+    fakes.search_results = {'Clocks Coldplay': [_track('c', 'Clocks', 'Coldplay')]}
+    client.post('/api/ai/generate', json={'prompt': 'x'})
+    assert fakes.openai_kwargs['model'] == 'configured-model'
+    assert fakes.openai_kwargs['max_completion_tokens'] == 123

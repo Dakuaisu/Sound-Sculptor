@@ -37,6 +37,8 @@ class Config:
     )
 
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+    OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')
+    OPENAI_MAX_COMPLETION_TOKENS = int(os.environ.get('OPENAI_MAX_COMPLETION_TOKENS', '1000'))
 
     CORS_ORIGINS = os.environ.get(
         'CORS_ORIGINS', 'http://localhost:5173'

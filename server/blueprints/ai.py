@@ -105,7 +105,7 @@ def generate():
     try:
         client = OpenAI(api_key=api_key, timeout=30)
         completion = client.chat.completions.create(
-            model='gpt-3.5-turbo',
+            model=current_app.config['OPENAI_MODEL'],
             messages=[
                 {
                     'role': 'system',
@@ -123,6 +123,7 @@ def generate():
                 },
             ],
             temperature=0.8,
+            max_completion_tokens=current_app.config['OPENAI_MAX_COMPLETION_TOKENS'],
         )
     except OpenAIError as exc:
         logger.warning('OpenAI request failed: %s', exc)
