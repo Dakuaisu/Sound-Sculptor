@@ -1,3 +1,4 @@
+import logging
 import time
 
 import requests
@@ -7,6 +8,8 @@ from spotipy.oauth2 import SpotifyOAuth, SpotifyOauthError
 from spotipy.cache_handler import MemoryCacheHandler
 
 TOKEN_INFO = 'token_info'
+
+logger = logging.getLogger(__name__)
 
 
 def get_spotify_oauth():
@@ -76,6 +79,19 @@ def create_playlist_with_tracks(sp, name, track_ids, public=True):
     # /playlists/{id}/tracks paths are removed for new Development Mode apps.
     playlist = sp.current_user_playlist_create(name, public=public)
     uris = [f'spotify:track:{tid}' for tid in track_ids]
-    for i in range(0, len(uris), 100):
-        sp.playlist_add_items(playlist['id'], uris[i:i + 100])
+    try:
+        for i in range(0, len(uris), 100):
+            sp.playlist_add_items(playlist['id'], uris[i:i + 100])
+    except Exception:
+        _remove_playlist(sp, playlist['id'])
+        raise
     return playlist
+
+
+def _remove_playlist(sp, playlist_id):
+    # spotipy 2.26 has no public wrapper for DELETE /me/library with a playlist
+    # URI, and DELETE /playlists/{id}/followers is removed for new Dev Mode apps.
+    try:
+        sp._delete('me/library', uris=f'spotify:playlist:{playlist_id}')
+    except Exception:
+        logger.exception('Could not remove partially created playlist %s', playlist_id)
