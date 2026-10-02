@@ -9,14 +9,14 @@ playlist_bp = Blueprint('playlist', __name__, url_prefix='/api')
 
 MAX_TRACKS = 10000
 
-# Min/max of each feature in tracks_features.csv; must equal soundfrnt/src/lib/featureRanges.json.
+# Min/max of each feature among indexed tracks (tempo 0 rows excluded); must equal soundfrnt/src/lib/featureRanges.json.
 FEATURE_RANGES = {
     'danceability': (0.0, 1.0),
     'energy': (0.0, 1.0),
-    'loudness': (-60.0, 7.234),
+    'loudness': (-58.925, 7.234),
     'acousticness': (0.0, 0.996),
     'instrumentalness': (0.0, 1.0),
-    'tempo': (0.0, 248.934),
+    'tempo': (30.018, 248.934),
     'liveness': (0.0, 1.0),
 }
 

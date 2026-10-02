@@ -127,3 +127,18 @@ def test_build_script_rejects_csv_without_feature_columns(tmp_path):
     pd.DataFrame({'id': ['a'], 'danceability': [0.1]}).to_csv(csv, index=False)
     with pytest.raises(SystemExit, match='missing required columns'):
         script.main(['--csv', str(csv), '--out', str(tmp_path / 'x.pkl')])
+
+
+def test_build_script_excludes_zero_tempo_tracks(tmp_path, monkeypatch):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        'build_index', pathlib.Path(__file__).parents[2] / 'scripts/build_index.py')
+    script = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(script)
+    tracks = _synthetic_tracks(n=30)
+    tracks.loc[:4, 'tempo'] = 0.0
+    csv, out = tmp_path / 'tracks.csv', tmp_path / 'index.pkl'
+    tracks.to_csv(csv, index=False)
+    script.main(['--csv', str(csv), '--out', str(out)])
+    ids = set(joblib.load(out)['ids'])
+    assert len(ids) == 25 and not ids & {f'synthetic{i}' for i in range(5)}

@@ -36,7 +36,9 @@ def main(argv=None):
     tracks = pd.read_csv(args.csv, usecols=['id', *FEATURE_KEYS])
     before = len(tracks)
     tracks = tracks.dropna().drop_duplicates(subset='id')
-    print(f'{len(tracks)} tracks ({before - len(tracks)} dropped: missing values or duplicate id)')
+    # tempo == 0 rows also have danceability == 0: failed analyses, not music.
+    tracks = tracks[tracks['tempo'] > 0]
+    print(f'{len(tracks)} tracks ({before - len(tracks)} dropped: missing values, duplicate id or tempo 0)')
 
     for key, (lo, hi) in FEATURE_RANGES.items():
         actual = (round(float(tracks[key].min()), 3), round(float(tracks[key].max()), 3))

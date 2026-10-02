@@ -89,8 +89,9 @@ The slider flow needs `server/knn_index.pkl`. It isn't committed (184 MB). Build
    (`TrishankV/Song-REcc`); its size matches Kaggle's listing and its SHA-256 is
    `39ee20762e4bbfe9aefbef7464c5500091eecfdbe0a45d33981898be2530a9e6`.
 2. Put it at `server/tracks_features.csv`. It's gitignored.
-3. `python scripts/build_index.py` takes about 5 s and about 600 MB of RAM for the
-   1,204,025 rows.
+3. `python scripts/build_index.py` takes about 5 s and about 600 MB of RAM. The CSV
+   has 1,204,025 rows; 2,777 with `tempo == 0` (which also have `danceability == 0`,
+   i.e. failed analyses) are excluded, leaving 1,201,248 indexed tracks.
 
 The script warns if the CSV's feature ranges differ from the slider ranges in
 `soundfrnt/src/lib/featureRanges.json`.
