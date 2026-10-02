@@ -4,6 +4,14 @@ Every row was checked against the code at `fc5038b`. Where a row depends on an e
 
 Spotify sources: [2024-11-27 Web API changes](https://developer.spotify.com/blog/2024-11-27-changes-to-the-web-api), [Feb 2026 changelog](https://developer.spotify.com/documentation/web-api/references/changes/february-2026), [Feb 2026 dev-access post](https://developer.spotify.com/blog/2026-02-06-update-on-developer-access-and-platform-security).
 
+## Status
+
+| Status | IDs |
+|--------|-----|
+| Fixed (one commit each; L4 fixed with H1, L7 has a follow-up commit) | H1, H2, H3, H6, M1, M2, M3, M5, M6, M7, M8, M9, M10, M11, M12, M13, M14, L1, L2, L3, L4, L5, L6, L7, L9 |
+| Partly fixed | M15: unused read scopes dropped; M7 then switched to `playlist-modify-private` + `playlist-modify-public`. L8: high-severity advisories cleared; two moderate ones need react-router v7. L10: OAuth, AI matching and ML loading now covered; no frontend tests. |
+| Needs the owner | C1 (revoke grant, rotate secret, rewrite history), H4 (does the dataset have genres?), H5 (data provenance / build script), M4 (blocked on H5), M16 (worker model) |
+
 | ID | Severity | Finding | File:line | Fix | Verified by |
 |----|----------|---------|-----------|-----|-------------|
 | C1 | critical | A real Spotify `access_token` and `refresh_token` (scopes: `user-library-read playlist-read-private user-top-read playlist-modify-public`, issued 2024-11-23) are in git history in `server/.cache`. The repo is public (unauthenticated GitHub API returns 200). The access token has expired. The refresh token stays valid until the grant is revoked. No client secret or OpenAI key was found anywhere in history. | `server/.cache` @ 92e6245, 4a0b100 (deleted in 01b48e8) | **Owner action:** revoke the app at spotify.com/account/apps and rotate the Client Secret. Then purge the file from history (`git filter-repo --path server/.cache --invert-paths`) and force-push. | `git show`, values redacted; secret scan of all history |
