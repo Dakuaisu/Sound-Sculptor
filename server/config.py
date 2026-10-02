@@ -40,7 +40,12 @@ class Config:
         'CORS_ORIGINS', 'http://localhost:5173'
     ).split(',')
 
-    FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+    FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://127.0.0.1:5173')
+    # Must be registered verbatim in the Spotify dashboard. Spotify rejects
+    # `localhost`; loopback must be 127.0.0.1, anything else must be HTTPS.
+    SPOTIFY_REDIRECT_URI = os.environ.get(
+        'SPOTIFY_REDIRECT_URI', 'http://127.0.0.1:5173/api/callback'
+    )
 
     @staticmethod
     def validate(app):

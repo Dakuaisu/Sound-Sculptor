@@ -60,7 +60,7 @@ python -m server.run
 cd soundfrnt && npm run dev
 ```
 
-Open http://localhost:5173
+Open http://127.0.0.1:5173 (not `localhost`: the session cookie must be on the same host as the OAuth callback).
 
 ### Docker (Production)
 
@@ -73,16 +73,17 @@ docker build -t sound-sculptor .
 docker run -p 80:80 --env-file .env sound-sculptor
 ```
 
-Open http://localhost
+Open http://127.0.0.1
 
 > **Note:** `model.pkl` and `tracks_features.csv` are mounted as volumes in docker-compose. Place them in the project root.
 
 ### Spotify OAuth Setup
 
-Add these redirect URIs in your [Spotify Dashboard](https://developer.spotify.com/dashboard):
+Add these redirect URIs in your [Spotify Dashboard](https://developer.spotify.com/dashboard) and set `SPOTIFY_REDIRECT_URI` to the one you use:
 
-- Development: `http://127.0.0.1:5000/api/callback`
-- Production: `http://your-domain/api/callback`
+- Development (Vite): `http://127.0.0.1:5173/api/callback`
+- Docker (local): `http://127.0.0.1/api/callback`
+- Production: `https://your-domain/api/callback` (Spotify requires HTTPS for non-loopback hosts)
 
 ## Project Structure
 

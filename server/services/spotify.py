@@ -3,7 +3,7 @@ import time
 
 import requests
 import spotipy
-from flask import session, current_app, url_for
+from flask import session, current_app
 from spotipy.oauth2 import SpotifyOAuth, SpotifyOauthError
 from spotipy.cache_handler import MemoryCacheHandler
 
@@ -21,7 +21,7 @@ def get_spotify_oauth():
     return SpotifyOAuth(
         client_id=cfg['SPOTIFY_CLIENT_ID'],
         client_secret=cfg['SPOTIFY_CLIENT_SECRET'],
-        redirect_uri=url_for('auth.callback', _external=True),
+        redirect_uri=cfg['SPOTIFY_REDIRECT_URI'],
         scope=cfg['SPOTIFY_SCOPES'],
         cache_handler=MemoryCacheHandler(),
     )
