@@ -48,6 +48,7 @@ class Config:
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
     OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')
     OPENAI_MAX_COMPLETION_TOKENS = int(os.environ.get('OPENAI_MAX_COMPLETION_TOKENS', '1000'))
+    PREDICT_N = int(os.environ.get('PREDICT_N', '20'))
     AI_RATE_LIMIT = os.environ.get('AI_RATE_LIMIT', '5 per minute;50 per day')
     # In-memory limits are per gunicorn worker; use a shared store (e.g. Redis) to make them global.
     RATELIMIT_STORAGE_URI = os.environ.get('RATELIMIT_STORAGE_URI', 'memory://')

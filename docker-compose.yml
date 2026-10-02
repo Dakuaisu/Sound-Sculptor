@@ -13,7 +13,6 @@ services:
       - FLASK_ENV=production
     restart: unless-stopped
     volumes:
-      # Mount model artifacts if available locally
-      - ./model.pkl:/app/server/model.pkl:ro
-      - ./tracks_features.csv:/app/server/tracks_features.csv:ro
+      # Built by scripts/build_index.py
+      - ./server/knn_index.pkl:/app/server/knn_index.pkl:ro
 

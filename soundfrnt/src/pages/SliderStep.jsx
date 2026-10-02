@@ -10,6 +10,7 @@ import Equalizer from '@/components/ui/Equalizer'
 import { GenerationLoader } from '@/components/ui/Loader'
 import useStore from '@/stores/useStore'
 import api from '@/services/api'
+import FEATURE_RANGES from '@/lib/featureRanges.json'
 
 const SLIDER_CONFIG = [
   { key: 'danceability', label: 'Danceability', left: 'Still', right: 'Danceable', icon: <Activity className="h-4 w-4" /> },
@@ -53,15 +54,9 @@ export default function SliderStep() {
   async function handleSubmit() {
     setSubmitting(true)
     try {
-      const features = {
-        danceability: sliders.danceability / 100,
-        energy: sliders.energy / 100,
-        loudness: -60 + (sliders.loudness / 100) * 60,
-        acousticness: sliders.acousticness / 100,
-        instrumentalness: sliders.instrumentalness / 100,
-        tempo: 40 + (sliders.tempo / 100) * 180,
-        liveness: sliders.liveness / 100,
-      }
+      const features = Object.fromEntries(
+        Object.entries(FEATURE_RANGES).map(([key, [min, max]]) => [key, min + (sliders[key] / 100) * (max - min)])
+      )
 
       const result = await api.predict(features)
       const songIds = result.recommended_song_ids || []

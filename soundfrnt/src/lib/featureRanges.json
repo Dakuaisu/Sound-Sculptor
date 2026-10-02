@@ -1,0 +1,9 @@
+{
+  "danceability": [0, 1],
+  "energy": [0, 1],
+  "loudness": [-60, 7.234],
+  "acousticness": [0, 0.996],
+  "instrumentalness": [0, 1],
+  "tempo": [0, 248.934],
+  "liveness": [0, 1]
+}

@@ -1,18 +1,13 @@
-import os
 import logging
+import os
 
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.neighbors import NearestNeighbors
+from sklearn.preprocessing import StandardScaler
 
 logger = logging.getLogger(__name__)
-
-_model = None
-_y_train = None
-
-
-class ModelArtifactError(Exception):
-    pass
 
 FEATURE_KEYS = [
     'danceability',
@@ -23,76 +18,64 @@ FEATURE_KEYS = [
     'tempo',
     'liveness',
 ]
+ARTIFACT_VERSION = 1
 
-MODEL_DIR = os.path.dirname(os.path.dirname(__file__))  # server/
-MODEL_PATH = os.path.join(MODEL_DIR, 'model.pkl')
-DATA_PATH = os.path.join(MODEL_DIR, 'tracks_features.csv')
+SERVER_DIR = os.path.dirname(os.path.dirname(__file__))
+INDEX_PATH = os.environ.get('KNN_INDEX_PATH', os.path.join(SERVER_DIR, 'knn_index.pkl'))
 
-
-def _load_model():
-    """Lazy-load the KNN model and training labels."""
-    global _model, _y_train
-
-    if _model is not None:
-        return
-
-    # Use isfile (not exists): a missing bind-mounted volume is created by Docker
-    # as an empty *directory*, which would pass exists() and then crash joblib.load
-    # with an opaque 500 instead of the intended 503.
-    if not os.path.isfile(MODEL_PATH):
-        raise FileNotFoundError(
-            f'ML model not found at {MODEL_PATH}. '
-            'Place model.pkl in the server/ directory.'
-        )
-    if not os.path.isfile(DATA_PATH):
-        raise FileNotFoundError(
-            f'Training data not found at {DATA_PATH}. '
-            'Place tracks_features.csv in the server/ directory.'
-        )
-
-    logger.info('Loading ML model from %s', MODEL_PATH)
-    model = joblib.load(MODEL_PATH)
-    # Only the `id` column is needed (mapped positionally from KNN neighbor
-    # indices); loading the full feature table wastes memory per worker.
-    ids = pd.read_csv(DATA_PATH, usecols=['id'])['id']
-    _check_artifacts_match(model, ids)
-    _model, _y_train = model, ids
+_artifact = None
 
 
-def _check_artifacts_match(model, ids):
-    estimator = model.steps[-1][1] if hasattr(model, 'steps') else model
-    n_fit = getattr(estimator, 'n_samples_fit_', None)
-    if n_fit is not None and n_fit != len(ids):
-        raise ModelArtifactError(
-            f'model.pkl was fit on {n_fit} rows but tracks_features.csv has {len(ids)}'
-        )
-    names = getattr(model, 'feature_names_in_', None)
-    if names is not None and list(names) != FEATURE_KEYS:
-        raise ModelArtifactError(
-            f'model.pkl expects features {list(names)}, the API sends {FEATURE_KEYS}'
-        )
+class ModelArtifactError(Exception):
+    pass
 
 
-def predict_songs(features: dict) -> list[str]:
-    """Predict recommended song IDs from audio features.
+def build_index(tracks: pd.DataFrame) -> dict:
+    """Standardize the audio features and index them for nearest-neighbour search.
 
-    Parameters
-    ----------
-    features : dict
-        Must contain keys matching ``FEATURE_KEYS``.
-
-    Returns
-    -------
-    list[str]
-        Spotify track IDs of recommended songs.
+    The scaler, the index and the row-aligned track IDs are returned together so
+    queries are always transformed exactly as the indexed data was.
     """
-    _load_model()
+    features = tracks[FEATURE_KEYS].to_numpy(dtype=float)
+    scaler = StandardScaler().fit(features)
+    index = NearestNeighbors().fit(scaler.transform(features))
+    return {
+        'version': ARTIFACT_VERSION,
+        'feature_keys': list(FEATURE_KEYS),
+        'scaler': scaler,
+        'index': index,
+        'ids': tracks['id'].to_numpy(dtype=object),
+    }
 
-    missing = [k for k in FEATURE_KEYS if k not in features]
-    if missing:
-        raise ValueError(f'Missing features: {missing}')
 
-    values = [float(features[k]) for k in FEATURE_KEYS]
-    input_arr = np.array(values).reshape(1, -1)
-    distances, indices = _model.kneighbors(input_arr)
-    return _y_train.iloc[indices[0]].tolist()
+def _validate(artifact) -> None:
+    if not isinstance(artifact, dict) or artifact.get('version') != ARTIFACT_VERSION:
+        raise ModelArtifactError(f'{INDEX_PATH} is not a version-{ARTIFACT_VERSION} index artifact')
+    if artifact['feature_keys'] != FEATURE_KEYS:
+        raise ModelArtifactError(
+            f"index was built on {artifact['feature_keys']}, the API sends {FEATURE_KEYS}"
+        )
+    if artifact['index'].n_samples_fit_ != len(artifact['ids']):
+        raise ModelArtifactError('index row count does not match the stored track IDs')
+
+
+def _load():
+    global _artifact
+    if _artifact is not None:
+        return _artifact
+    # isfile, not exists: a missing Docker bind mount appears as an empty directory.
+    if not os.path.isfile(INDEX_PATH):
+        raise FileNotFoundError(f'KNN index not found at {INDEX_PATH}')
+    logger.info('Loading KNN index from %s', INDEX_PATH)
+    artifact = joblib.load(INDEX_PATH)
+    _validate(artifact)
+    _artifact = artifact
+    return _artifact
+
+
+def predict_songs(features: dict, n: int) -> list[str]:
+    """Return the IDs of the ``n`` indexed tracks closest to ``features``."""
+    artifact = _load()
+    query = np.array([[float(features[k]) for k in FEATURE_KEYS]])
+    _, indices = artifact['index'].kneighbors(artifact['scaler'].transform(query), n_neighbors=n)
+    return artifact['ids'][indices[0]].tolist()
