@@ -35,3 +35,19 @@ def test_parses_structured_json():
 
 def test_returns_empty_on_garbage():
     assert _parse_songs_from_text('this is not a song list at all!!!') == []
+
+
+def test_json_list_of_strings_is_ignored_not_returned():
+    assert _parse_songs_from_text('["Yellow by Coldplay"]') == []
+
+
+def test_json_songs_non_list_is_ignored():
+    assert _parse_songs_from_text('{"songs": "nope"}') == []
+
+
+def test_json_keeps_only_entries_with_a_title():
+    text = '{"songs": [{"title": "X", "artist": "Y"}, {"artist": "no title"}, 3, {"title": "Z"}]}'
+    assert _parse_songs_from_text(text) == [
+        {'title': 'X', 'artist': 'Y'},
+        {'title': 'Z', 'artist': ''},
+    ]

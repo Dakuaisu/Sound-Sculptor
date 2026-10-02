@@ -49,10 +49,14 @@ def _parse_songs_from_text(text: str) -> list[dict]:
     # Structured JSON fast-path (in case the model returns structured data).
     try:
         parsed = json.loads(text)
-        if isinstance(parsed, dict) and 'songs' in parsed:
-            return parsed['songs']
+        if isinstance(parsed, dict):
+            parsed = parsed.get('songs')
         if isinstance(parsed, list):
-            return parsed
+            return [
+                {'title': s['title'].strip(), 'artist': str(s.get('artist') or '').strip()}
+                for s in parsed
+                if isinstance(s, dict) and isinstance(s.get('title'), str) and s['title'].strip()
+            ]
     except (json.JSONDecodeError, TypeError):
         pass
 

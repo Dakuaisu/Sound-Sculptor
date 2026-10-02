@@ -76,3 +76,10 @@ def test_no_verified_matches_returns_404_without_creating_playlist(client, fakes
     fakes.search_results = {'Ghost Song Nobody Real': [_track('x', 'Ghost', 'Other')]}
     assert client.post('/api/ai/generate', json={'prompt': 'x'}).status_code == 404
     assert fakes.create_calls == []
+
+
+def test_malformed_json_from_model_is_not_a_500(client, fakes):
+    fakes.llm_text = '["Yellow by Coldplay"]'
+    resp = client.post('/api/ai/generate', json={'prompt': 'x'})
+    assert resp.status_code == 502
+    assert 'error' in resp.get_json()
