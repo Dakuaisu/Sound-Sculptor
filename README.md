@@ -1,6 +1,6 @@
 # Sound Sculptor
 
-AI-powered playlist generator that combines Spotify, machine learning, and ChatGPT to create the perfect playlist from your mood, genre preferences, or a simple text prompt.
+AI-powered playlist generator that combines Spotify, machine learning, and an OpenAI model to create the perfect playlist from your mood, genre preferences, or a simple text prompt.
 
 ## Features
 
@@ -8,16 +8,16 @@ AI-powered playlist generator that combines Spotify, machine learning, and ChatG
 
 1. **Sculpt It Yourself** — Pick your mood, choose genres, fine-tune audio sliders (danceability, energy, acousticness, instrumentalness, loudness, tempo, liveness), and get ML-powered recommendations from a KNN model trained on 1M+ songs.
 
-2. **AI Generated** — Describe what you want in plain text ("chill vibes for a rainy afternoon") and ChatGPT finds the tracks on Spotify.
+2. **AI Generated** — Describe what you want in plain text ("chill vibes for a rainy afternoon"). An OpenAI model (configurable via `OPENAI_MODEL`) suggests songs; each is looked up on Spotify and kept only if the artist matches, so invented songs are dropped.
 
-Both flows create a real Spotify playlist you can save to your library.
+Both flows create a private playlist in your Spotify account.
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 18, React Router v6, Zustand, Vite |
-| Backend | Flask, Blueprints, SpotiPy, OpenAI SDK |
+| Frontend | React 18, React Router v6, Zustand, Vite, Tailwind CSS, Framer Motion |
+| Backend | Flask, Blueprints, SpotiPy, OpenAI SDK, Flask-Session, Flask-Limiter |
 | ML | scikit-learn KNN, joblib, pandas |
 | Infra | Docker, Nginx, Gunicorn |
 
@@ -29,7 +29,7 @@ Both flows create a real Spotify playlist you can save to your library.
 - Node.js 18+
 - [Spotify Developer App](https://developer.spotify.com/dashboard) (get Client ID & Secret)
 - OpenAI API key (optional, for AI playlists)
-- ML model files: `model.pkl` and `tracks_features.csv` in `server/`
+- ML model files `model.pkl` and `tracks_features.csv` (not in this repo): in `server/` for local dev, in the project root for docker-compose
 
 ### Setup
 
@@ -75,7 +75,7 @@ docker run -p 80:80 --env-file .env sound-sculptor
 
 Open http://127.0.0.1
 
-> **Note:** `model.pkl` and `tracks_features.csv` are mounted as volumes in docker-compose. Place them in the project root.
+> **Note:** docker-compose mounts `./model.pkl` and `./tracks_features.csv` from the project root into `server/`. Without them the AI flow still works and `/api/predict` returns 503.
 
 ### Spotify OAuth Setup
 
@@ -84,6 +84,15 @@ Add these redirect URIs in your [Spotify Dashboard](https://developer.spotify.co
 - Development (Vite): `http://127.0.0.1:5173/api/callback`
 - Docker (local): `http://127.0.0.1/api/callback`
 - Production: `https://your-domain/api/callback` (Spotify requires HTTPS for non-loopback hosts)
+
+## Testing
+
+```bash
+pip install -r server/requirements-dev.txt
+python -m pytest server/tests -q          # backend
+cd soundfrnt && npm run lint && npm run build
+./scripts/docker-smoke.sh                 # needs Docker
+```
 
 ## Project Structure
 
@@ -95,21 +104,25 @@ Sound-Sculptor/
 │   ├── run.py               # Development entry point
 │   ├── requirements.txt
 │   ├── blueprints/
-│   │   ├── auth.py          # /api/connect, /api/callback, /api/me
+│   │   ├── auth.py          # /api/connect, /api/callback, /api/me, /api/logout
 │   │   ├── playlist.py      # /api/predict, /api/create-playlist
-│   │   └── ai.py            # /api/ai/generate, /api/ai/save
+│   │   └── ai.py            # /api/ai/generate
 │   └── services/
 │       ├── spotify.py       # OAuth + token management
 │       └── ml.py            # KNN model loading + prediction
+│   └── tests/               # pytest suite (no network; synthetic fixtures)
 ├── soundfrnt/               # React SPA
 │   ├── src/
 │   │   ├── App.jsx          # Routes
-│   │   ├── components/      # Header, Footer, Logo, Spinner
+│   │   ├── components/      # brand/, layout/, ui/ (component library)
 │   │   ├── pages/           # Landing, Connect, Choice, wizard steps, Finished
 │   │   ├── stores/          # Zustand state management
 │   │   ├── services/        # API client
-│   │   └── styles/          # Consolidated CSS
+│   │   ├── hooks/, lib/     # auth bootstrap, motion presets, class helpers
+│   │   └── styles/          # Tailwind entry CSS
 │   └── vite.config.js       # Dev proxy + build config
+├── scripts/docker-smoke.sh  # Builds the image and checks container behaviour
+├── .github/workflows/ci.yml # pytest, lint, build, Docker smoke test
 ├── Dockerfile               # Multi-stage: Node build → Python + Nginx
 ├── docker-compose.yml       # Production + dev profiles
 ├── nginx.conf               # SPA routing + API proxy
