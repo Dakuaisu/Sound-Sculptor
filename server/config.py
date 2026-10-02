@@ -30,12 +30,7 @@ class Config:
 
     SPOTIFY_CLIENT_ID = os.environ.get('CLIENT_ID')
     SPOTIFY_CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
-    SPOTIFY_SCOPES = (
-        'user-library-read '
-        'playlist-read-private '
-        'user-top-read '
-        'playlist-modify-public'
-    )
+    SPOTIFY_SCOPES = 'playlist-modify-public'
 
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
     OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')

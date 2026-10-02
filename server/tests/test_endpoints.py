@@ -113,3 +113,11 @@ def test_logout_clears_spotify_token(client):
     assert client.post('/api/logout').status_code == 200
     with client.session_transaction() as sess:
         assert 'token_info' not in sess
+
+
+def test_connect_requests_only_needed_scopes(client):
+    from urllib.parse import urlparse, parse_qs
+    resp = client.get('/api/connect')
+    assert resp.status_code == 302
+    query = parse_qs(urlparse(resp.headers['Location']).query)
+    assert query['scope'] == ['playlist-modify-public']
