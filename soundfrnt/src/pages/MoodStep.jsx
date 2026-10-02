@@ -28,7 +28,7 @@ export default function MoodStep() {
           <Button variant="ghost" onClick={() => navigate('/choice')}>
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
-          <Button onClick={() => navigate('/create/genre')}>
+          <Button onClick={() => navigate('/create/sliders')}>
             Next <ArrowRight className="h-4 w-4" />
           </Button>
         </>

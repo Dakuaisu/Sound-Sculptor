@@ -4,7 +4,7 @@ import { cn } from '@/lib/cn'
 import { spring } from '@/lib/motion'
 
 /**
- * Unified selectable pill — used for moods, genres, and suggestions.
+ * Unified selectable pill — used for moods and suggestions.
  * One consistent shape replaces the old circle-vs-rectangle split.
  * @param {object} props
  * @param {boolean} [props.selected]

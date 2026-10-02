@@ -11,7 +11,6 @@ import About from './pages/About'
 import Connect from './pages/Connect'
 import Choice from './pages/Choice'
 import MoodStep from './pages/MoodStep'
-import GenreStep from './pages/GenreStep'
 import SliderStep from './pages/SliderStep'
 import AiStep from './pages/AiStep'
 import Finished from './pages/Finished'
@@ -49,7 +48,6 @@ export default function App() {
           <Route path="/connect" element={<Connect />} />
           <Route path="/choice" element={<RequireAuth><Choice /></RequireAuth>} />
           <Route path="/create/mood" element={<RequireAuth><MoodStep /></RequireAuth>} />
-          <Route path="/create/genre" element={<RequireAuth><GenreStep /></RequireAuth>} />
           <Route path="/create/sliders" element={<RequireAuth><SliderStep /></RequireAuth>} />
           <Route path="/create/ai" element={<RequireAuth><AiStep /></RequireAuth>} />
           <Route path="/finished" element={<RequireAuth><Finished /></RequireAuth>} />

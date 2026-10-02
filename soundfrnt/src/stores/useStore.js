@@ -26,7 +26,6 @@ const useStore = create(
 
       // ---- Wizard ----
       selectedMoods: [],
-      selectedGenres: [],
       sliders: { ...SLIDER_DEFAULTS },
 
       toggleMood: (mood) =>
@@ -36,18 +35,11 @@ const useStore = create(
             : [...state.selectedMoods, mood],
         })),
 
-      toggleGenre: (genre) =>
-        set((state) => ({
-          selectedGenres: state.selectedGenres.includes(genre)
-            ? state.selectedGenres.filter((g) => g !== genre)
-            : [...state.selectedGenres, genre],
-        })),
-
       setSlider: (key, value) =>
         set((state) => ({ sliders: { ...state.sliders, [key]: value } })),
 
       resetWizard: () =>
-        set({ selectedMoods: [], selectedGenres: [], sliders: { ...SLIDER_DEFAULTS } }),
+        set({ selectedMoods: [], sliders: { ...SLIDER_DEFAULTS } }),
 
       // ---- Playlist result ----
       playlist: null,
@@ -79,7 +71,6 @@ const useStore = create(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         selectedMoods: state.selectedMoods,
-        selectedGenres: state.selectedGenres,
         sliders: state.sliders,
       }),
     }

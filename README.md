@@ -1,12 +1,12 @@
 # Sound Sculptor
 
-AI-powered playlist generator that combines Spotify, machine learning, and an OpenAI model to create the perfect playlist from your mood, genre preferences, or a simple text prompt.
+AI-powered playlist generator that combines Spotify, machine learning, and an OpenAI model to create the perfect playlist from your mood, a set of audio sliders, or a simple text prompt.
 
 ## Features
 
 **Two ways to create playlists:**
 
-1. **Sculpt It Yourself** — Pick your mood, choose genres, fine-tune audio sliders (danceability, energy, acousticness, instrumentalness, loudness, tempo, liveness), and get the closest matches from a nearest-neighbour index of 1.2M tracks. KNN doesn't learn anything: the seven audio features of every track are standardized (zero mean, unit variance, so no feature dominates the distance) and indexed. Your slider settings become a point in that space, and the nearest tracks by Euclidean distance form the playlist.
+1. **Sculpt It Yourself** — Pick your mood, fine-tune audio sliders (danceability, energy, acousticness, instrumentalness, loudness, tempo, liveness), and get the closest matches from a nearest-neighbour index of 1.2M tracks. KNN doesn't learn anything: the seven audio features of every track are standardized (zero mean, unit variance, so no feature dominates the distance) and indexed. Your slider settings become a point in that space, and the nearest tracks by Euclidean distance form the playlist.
 
 2. **AI Generated** — Describe what you want in plain text ("chill vibes for a rainy afternoon"). An OpenAI model (configurable via `OPENAI_MODEL`) suggests songs; each is looked up on Spotify and kept only if the artist matches, so invented songs are dropped.
 

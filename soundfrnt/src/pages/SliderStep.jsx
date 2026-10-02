@@ -83,12 +83,12 @@ export default function SliderStep() {
 
   return (
     <WizardShell
-      step={2}
+      step={1}
       title="Fine-tune your sound"
       subtitle="Shape seven dimensions — the chart on the right moves as you do."
       footer={
         <>
-          <Button variant="ghost" onClick={() => navigate('/create/genre')}>
+          <Button variant="ghost" onClick={() => navigate('/create/mood')}>
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
           <Button onClick={handleSubmit}>Generate playlist</Button>

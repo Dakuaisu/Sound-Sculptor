@@ -4,12 +4,11 @@ import { fadeUp } from '@/lib/motion'
 
 const WIZARD_STEPS = [
   { key: 'mood', label: 'Mood' },
-  { key: 'genre', label: 'Genre' },
   { key: 'tune', label: 'Tune' },
 ]
 
 /**
- * Shared chrome for the three-step "Sculpt it" wizard:
+ * Shared chrome for the two-step "Sculpt it" wizard:
  * a progress stepper, animated header, content, and a footer action row.
  */
 export default function WizardShell({ step, title, subtitle, children, footer }) {

@@ -22,7 +22,7 @@ const PATHS = [
     icon: SlidersHorizontal,
     eyebrow: 'Most control',
     title: 'Sculpt it',
-    desc: 'Pick moods and genres, then fine-tune seven audio dimensions by hand.',
+    desc: 'Pick a mood, then fine-tune seven audio dimensions by hand.',
     gradient: 'from-amber to-primary-700',
     recommended: false,
   },
