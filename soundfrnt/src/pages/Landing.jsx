@@ -116,8 +116,8 @@ const FEATURES = [
   },
   {
     icon: ListMusic,
-    title: 'Save it to Spotify',
-    body: 'Preview the full playlist inline, then save it straight to your library in one tap. No copy-paste, no friction.',
+    title: 'Straight to Spotify',
+    body: 'Preview the full playlist inline. It is already in your Spotify account as a private playlist. No copy-paste, no friction.',
   },
 ]
 
@@ -187,7 +187,7 @@ export default function Landing() {
             ['1M+', 'tracks modeled'],
             ['2', 'ways to create'],
             ['7', 'audio dimensions'],
-            ['1-tap', 'save to Spotify'],
+            ['Private', 'by default'],
           ].map(([stat, label]) => (
             <div key={label} className="bg-bg px-6 py-8 text-center">
               <p className="font-display text-h2 text-text-1">{stat}</p>

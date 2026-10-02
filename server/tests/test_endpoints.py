@@ -61,8 +61,8 @@ def test_ai_generate_requires_prompt(client):
     assert client.post('/api/ai/generate', json={'prompt': '   '}).status_code == 400
 
 
-def test_ai_save_requires_playlist_id(client):
-    assert client.post('/api/ai/save', json={}).status_code == 400
+def test_ai_save_endpoint_removed(client):
+    assert client.post('/api/ai/save', json={'playlist_id': 'x'}).status_code == 404
 
 
 def test_unknown_route_returns_json_404(client):
@@ -120,4 +120,4 @@ def test_connect_requests_only_needed_scopes(client):
     resp = client.get('/api/connect')
     assert resp.status_code == 302
     query = parse_qs(urlparse(resp.headers['Location']).query)
-    assert query['scope'] == ['playlist-modify-public']
+    assert query['scope'] == ['playlist-modify-private playlist-modify-public']

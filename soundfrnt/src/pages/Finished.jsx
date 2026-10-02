@@ -1,6 +1,5 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Check, ExternalLink, Share2, RotateCcw, Music2, ListMusic, Sparkles } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
@@ -8,9 +7,8 @@ import Badge from '@/components/ui/Badge'
 import Equalizer from '@/components/ui/Equalizer'
 import EmptyState from '@/components/ui/EmptyState'
 import useStore from '@/stores/useStore'
-import api from '@/services/api'
 import { cn } from '@/lib/cn'
-import { staggerContainer, trackItem, fadeUp, spring } from '@/lib/motion'
+import { staggerContainer, trackItem, fadeUp } from '@/lib/motion'
 
 const COVERS = [
   'from-primary-500 to-primary-900',
@@ -19,34 +17,9 @@ const COVERS = [
   'from-primary-400 to-primary-800',
 ]
 
-function Burst({ show }) {
-  const reduce = useReducedMotion()
-  if (!show || reduce) return null
-  return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-      {Array.from({ length: 14 }).map((_, i) => {
-        const ang = (i / 14) * Math.PI * 2
-        return (
-          <motion.span
-            key={i}
-            initial={{ opacity: 1, x: 0, y: 0, scale: 1 }}
-            animate={{ opacity: 0, x: Math.cos(ang) * 130, y: Math.sin(ang) * 130, scale: 0.3 }}
-            transition={{ duration: 0.9, ease: 'easeOut' }}
-            className="absolute h-2 w-2 rounded-full"
-            style={{ background: i % 2 ? '#A15EF8' : '#FF8A5C' }}
-          />
-        )
-      })}
-    </div>
-  )
-}
-
 export default function Finished() {
   const navigate = useNavigate()
-  const { playlist, resetWizard, clearPlaylist, addToast, setError } = useStore()
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [burst, setBurst] = useState(false)
+  const { playlist, resetWizard, clearPlaylist, addToast } = useStore()
 
   if (!playlist) {
     return (
@@ -65,21 +38,6 @@ export default function Finished() {
   const cover = COVERS[(name.length || 0) % COVERS.length]
   const embedUrl = `https://open.spotify.com/embed/playlist/${playlist.playlist_id}?theme=0`
   const tracks = playlist.source === 'ai' && Array.isArray(playlist.tracks) ? playlist.tracks : null
-
-  async function handleSave() {
-    setSaving(true)
-    try {
-      await api.savePlaylist(playlist.playlist_id)
-      setSaved(true)
-      setBurst(true)
-      setTimeout(() => setBurst(false), 1000)
-      addToast({ type: 'success', title: 'Saved to your library', message: name })
-    } catch (err) {
-      setError(err.message || 'Could not save the playlist. Please try again.')
-    } finally {
-      setSaving(false)
-    }
-  }
 
   async function handleShare() {
     const url = playlist.external_url
@@ -123,24 +81,9 @@ export default function Finished() {
         <motion.div variants={fadeUp} initial="initial" animate="animate" className="lg:sticky lg:top-24">
           <Card variant="raised" className="overflow-hidden p-0">
             <div className={cn('relative flex aspect-square items-center justify-center bg-gradient-to-br', cover)}>
-              <Burst show={burst} />
-              <motion.div
-                animate={saved ? { scale: [1, 1.06, 1] } : {}}
-                transition={spring.soft}
-                className="flex flex-col items-center gap-3"
-              >
+              <div className="flex flex-col items-center gap-3">
                 <Equalizer bars={7} className="h-20 w-28 text-white/90" />
-              </motion.div>
-              {saved && (
-                <motion.span
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={spring.snappy}
-                  className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-success text-black shadow-e2"
-                >
-                  <Check className="h-5 w-5" />
-                </motion.span>
-              )}
+              </div>
             </div>
             <div className="p-5">
               <div className="mb-4 flex items-start justify-between gap-3">
@@ -155,25 +98,15 @@ export default function Finished() {
               </div>
 
               <div className="flex flex-col gap-2.5">
-                <Button onClick={handleSave} loading={saving} disabled={saved} variant={saved ? 'secondary' : 'primary'}>
-                  {saved ? (
-                    <>
-                      <Check className="h-4 w-4" /> Saved to library
-                    </>
-                  ) : (
-                    'Save to library'
-                  )}
-                </Button>
-                <div className="grid grid-cols-2 gap-2.5">
-                  {playlist.external_url && (
-                    <Button href={playlist.external_url} target="_blank" rel="noopener noreferrer" variant="secondary" size="sm">
-                      <ExternalLink className="h-4 w-4" /> Spotify
-                    </Button>
-                  )}
-                  <Button onClick={handleShare} variant="secondary" size="sm">
-                    <Share2 className="h-4 w-4" /> Share
+                <p className="text-caption text-text-3">Saved to your Spotify account as a private playlist.</p>
+                {playlist.external_url && (
+                  <Button href={playlist.external_url} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" /> Open in Spotify
                   </Button>
-                </div>
+                )}
+                <Button onClick={handleShare} variant="secondary" size="sm">
+                  <Share2 className="h-4 w-4" /> Share
+                </Button>
                 <Button onClick={createAnother} variant="ghost" size="sm" className="mt-1">
                   <RotateCcw className="h-4 w-4" /> Create another
                 </Button>

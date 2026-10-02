@@ -31,7 +31,7 @@ def fakes(app, monkeypatch):
     sp = MagicMock()
     sp.search.side_effect = lambda q, **_kw: {'tracks': {'items': state.search_results.get(q, [])}}
 
-    def fake_create(_sp, name, track_ids, public=True):
+    def fake_create(_sp, name, track_ids):
         state.create_calls.append(track_ids)
         return {'id': 'pl1', 'external_urls': {'spotify': 'https://example.test/pl1'}}
 

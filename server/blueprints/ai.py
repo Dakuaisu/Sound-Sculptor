@@ -3,7 +3,7 @@ import logging
 import re
 import unicodedata
 
-from flask import Blueprint, request, session, current_app
+from flask import Blueprint, request, current_app
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from openai import OpenAI, OpenAIError
@@ -177,7 +177,7 @@ def generate():
         return {'error': 'No matching tracks found on Spotify'}, 404
 
     # --- Create the playlist (chunked) ---
-    playlist = create_playlist_with_tracks(sp, playlist_name, track_ids, public=True)
+    playlist = create_playlist_with_tracks(sp, playlist_name, track_ids)
 
     result = {
         'playlist_id': playlist['id'],
@@ -188,21 +188,4 @@ def generate():
         'total_requested': len(songs),
     }
 
-    session['playlist_id'] = playlist['id']
     return result
-
-
-@ai_bp.route('/save', methods=['POST'])
-def save():
-    """Save (follow) a previously generated playlist into the user's library."""
-    data = request.get_json(silent=True)
-    playlist_id = (data or {}).get('playlist_id') or session.get('playlist_id')
-
-    if not playlist_id:
-        return {'error': 'No playlist_id provided'}, 400
-    if not isinstance(playlist_id, str):
-        return {'error': 'playlist_id must be a string'}, 400
-
-    sp = get_spotify_client()  # PermissionError -> 401 via the central handler
-    sp.current_user_follow_playlist(playlist_id)  # SpotifyException -> central handler
-    return {'message': 'Playlist saved to library'}

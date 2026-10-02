@@ -17,7 +17,7 @@ function SpotifyGlyph({ className }) {
 }
 
 const PERMS = [
-  'Create playlists and save them to your library',
+  'Create private playlists in your Spotify account',
   'Read your public profile and display name',
   'We never post, follow, or delete without you asking',
 ]

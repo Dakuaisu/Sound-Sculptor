@@ -43,12 +43,6 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ prompt }),
     }),
-
-  savePlaylist: (playlistId) =>
-    request('/ai/save', {
-      method: 'POST',
-      body: JSON.stringify({ playlist_id: playlistId }),
-    }),
 }
 
 export default api

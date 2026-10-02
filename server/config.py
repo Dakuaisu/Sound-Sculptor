@@ -42,7 +42,8 @@ class Config:
 
     SPOTIFY_CLIENT_ID = os.environ.get('CLIENT_ID')
     SPOTIFY_CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
-    SPOTIFY_SCOPES = 'playlist-modify-public'
+    # private: create/fill private playlists; public: listed for DELETE /me/library (L1 cleanup).
+    SPOTIFY_SCOPES = 'playlist-modify-private playlist-modify-public'
 
     OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
     OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')

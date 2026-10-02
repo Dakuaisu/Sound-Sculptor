@@ -14,8 +14,8 @@ def _fake_sp():
 def test_create_playlist_uses_me_playlists_and_items_endpoints():
     # spec= makes calls to removed methods (user_playlist_create / user_playlist_add_tracks) raise.
     sp = _fake_sp()
-    create_playlist_with_tracks(sp, 'Mix', ['a', 'b'], public=True)
-    sp.current_user_playlist_create.assert_called_once_with('Mix', public=True)
+    create_playlist_with_tracks(sp, 'Mix', ['a', 'b'])
+    sp.current_user_playlist_create.assert_called_once_with('Mix', public=False)
     sp.playlist_add_items.assert_called_once_with('pl1', ['spotify:track:a', 'spotify:track:b'])
 
 

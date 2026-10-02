@@ -67,7 +67,7 @@ def get_spotify_client():
     return spotipy.Spotify(auth=access_token)
 
 
-def create_playlist_with_tracks(sp, name, track_ids, public=True):
+def create_playlist_with_tracks(sp, name, track_ids):
     """Create a playlist and add ``track_ids``, chunked to Spotify's
     100-tracks-per-request limit.
 
@@ -77,7 +77,7 @@ def create_playlist_with_tracks(sp, name, track_ids, public=True):
     """
     # /me/playlists and /playlists/{id}/items: the /users/{id}/playlists and
     # /playlists/{id}/tracks paths are removed for new Development Mode apps.
-    playlist = sp.current_user_playlist_create(name, public=public)
+    playlist = sp.current_user_playlist_create(name, public=False)
     uris = [f'spotify:track:{tid}' for tid in dict.fromkeys(track_ids)]
     try:
         for i in range(0, len(uris), 100):

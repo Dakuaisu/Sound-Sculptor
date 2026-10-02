@@ -70,7 +70,7 @@ def create_playlist():
         name = 'Sound Sculptor Playlist'
 
     sp = get_spotify_client()  # PermissionError -> 401 via the central handler
-    playlist = create_playlist_with_tracks(sp, name, track_ids, public=True)
+    playlist = create_playlist_with_tracks(sp, name, track_ids)
 
     return {
         'playlist_id': playlist['id'],
