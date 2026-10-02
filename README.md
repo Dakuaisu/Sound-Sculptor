@@ -114,7 +114,8 @@ Add these redirect URIs in your [Spotify Dashboard](https://developer.spotify.co
 
 ```bash
 pip install -r server/requirements-dev.txt
-python -m pytest server/tests -q          # backend
+ruff check server scripts                 # backend lint
+python -m pytest server/tests -q          # backend tests
 cd soundfrnt && npm run lint && npm run build
 ./scripts/docker-smoke.sh                 # needs Docker
 ```
@@ -148,7 +149,7 @@ Sound-Sculptor/
 │   └── vite.config.js       # Dev proxy + build config
 ├── scripts/build_index.py   # Builds server/knn_index.pkl from tracks_features.csv
 ├── scripts/docker-smoke.sh  # Builds the image and checks container behaviour
-├── .github/workflows/ci.yml # pytest, lint, build, Docker smoke test
+├── .github/workflows/ci.yml # ruff + pytest, frontend lint + build, Docker smoke, gitleaks
 ├── Dockerfile               # Multi-stage: Node build → Python + Nginx
 ├── docker-compose.yml       # Production stack (app + model volumes)
 ├── nginx.conf               # SPA routing + API proxy

@@ -43,3 +43,4 @@ opencode.json
 *.egg-info/
 venv/
 .venv/
+.ruff_cache/

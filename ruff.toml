@@ -1,0 +1,3 @@
+[lint]
+# pyflakes + pycodestyle errors
+select = ["E4", "E7", "E9", "F"]
