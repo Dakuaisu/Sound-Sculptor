@@ -83,8 +83,9 @@ The slider flow needs `server/knn_index.pkl`. It isn't committed (184 MB). Build
 
 1. Download `tracks_features.csv` from the Kaggle dataset
    [Spotify 1.2M+ Songs](https://www.kaggle.com/datasets/rodolfofigueroa/spotify-12m-songs)
-   (`rodolfofigueroa/spotify-12m-songs`, needs a Kaggle account). Check its licence
-   on that page before redistributing anything derived from it.
+   (`rodolfofigueroa/spotify-12m-songs`, needs a Kaggle account). Kaggle lists its
+   licence as "Unknown", so neither the CSV nor the built index is committed or
+   redistributed here.
    The copy used during development came from a public Hugging Face mirror
    (`TrishankV/Song-REcc`); its size matches Kaggle's listing and its SHA-256 is
    `39ee20762e4bbfe9aefbef7464c5500091eecfdbe0a45d33981898be2530a9e6`.
