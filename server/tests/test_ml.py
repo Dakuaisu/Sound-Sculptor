@@ -83,3 +83,47 @@ def test_invalid_artifact_returns_503(client, write_index):
     write_index({'version': 0})
     payload = _slider_features({k: 50 for k in RANGES})
     assert client.post('/api/predict', json=payload).status_code == 503
+
+
+def test_missing_index_gives_clear_503(client, tmp_path, monkeypatch):
+    monkeypatch.setattr(ml, '_artifact', None)
+    monkeypatch.setattr(ml, 'INDEX_PATH', str(tmp_path / 'absent.pkl'))
+    resp = client.post('/api/predict', json=_slider_features({k: 50 for k in RANGES}))
+    assert resp.status_code == 503
+    assert "track index hasn't been built" in resp.get_json()['error']
+
+
+def test_startup_warns_when_index_missing(tmp_path, monkeypatch, caplog):
+    from server.app import create_app
+    monkeypatch.setattr(ml, 'INDEX_PATH', str(tmp_path / 'absent.pkl'))
+    create_app()
+    assert 'scripts/build_index.py' in caplog.text
+
+
+def test_build_script_writes_a_loadable_index(tmp_path, monkeypatch):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        'build_index', pathlib.Path(__file__).parents[2] / 'scripts/build_index.py')
+    script = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(script)
+
+    csv, out = tmp_path / 'tracks.csv', tmp_path / 'index.pkl'
+    tracks = _synthetic_tracks(n=40)
+    pd.concat([tracks, tracks.iloc[:3]]).to_csv(csv, index=False)
+    script.main(['--csv', str(csv), '--out', str(out)])
+
+    monkeypatch.setattr(ml, '_artifact', None)
+    monkeypatch.setattr(ml, 'INDEX_PATH', str(out))
+    assert len(ml.predict_songs(tracks.iloc[0][ml.FEATURE_KEYS].to_dict(), n=40)) == 40
+
+
+def test_build_script_rejects_csv_without_feature_columns(tmp_path):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        'build_index', pathlib.Path(__file__).parents[2] / 'scripts/build_index.py')
+    script = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(script)
+    csv = tmp_path / 'bad.csv'
+    pd.DataFrame({'id': ['a'], 'danceability': [0.1]}).to_csv(csv, index=False)
+    with pytest.raises(SystemExit, match='missing required columns'):
+        script.main(['--csv', str(csv), '--out', str(tmp_path / 'x.pkl')])

@@ -31,9 +31,9 @@ def register_error_handlers(app):
 
     @app.errorhandler(FileNotFoundError)
     def _missing_artifact(exc):
-        # Raised by the ML service when model.pkl / tracks_features.csv are absent.
-        logger.error('Required model artifact missing: %s', exc)
-        return jsonify(error='The recommendation model is not available'), 503
+        logger.error('%s. Build it with: python scripts/build_index.py', exc)
+        return jsonify(error="The track index hasn't been built on this server, so "
+                             'slider-based playlists are unavailable.'), 503
 
     @app.errorhandler(ModelArtifactError)
     def _mismatched_artifacts(exc):

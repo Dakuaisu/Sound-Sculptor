@@ -1,4 +1,5 @@
 import logging
+import os
 
 from flask import Flask, jsonify
 from flask_session import Session
@@ -29,6 +30,12 @@ def create_app(config=None):
     limiter.init_app(app)
 
     register_error_handlers(app)
+
+    from server.services.ml import INDEX_PATH
+    if not os.path.isfile(INDEX_PATH):
+        logging.getLogger(__name__).warning(
+            'KNN index not found at %s; /api/predict will return 503. '
+            'Build it with: python scripts/build_index.py', INDEX_PATH)
 
     @app.route('/api/health')
     def health():

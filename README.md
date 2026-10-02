@@ -29,7 +29,7 @@ Both flows create a private playlist in your Spotify account.
 - Node.js 18+
 - [Spotify Developer App](https://developer.spotify.com/dashboard) (get Client ID & Secret)
 - OpenAI API key (optional, for AI playlists)
-- ML model files `model.pkl` and `tracks_features.csv` (not in this repo): in `server/` for local dev, in the project root for docker-compose
+- For slider playlists: `server/knn_index.pkl`, built from `tracks_features.csv` (see [Recommendation data](#recommendation-data))
 
 ### Setup
 
@@ -74,7 +74,26 @@ docker run -p 80:80 --env-file .env sound-sculptor
 
 Open http://127.0.0.1
 
-> **Note:** docker-compose mounts `./model.pkl` and `./tracks_features.csv` from the project root into `server/`. Without them the AI flow still works and `/api/predict` returns 503.
+> **Note:** docker-compose mounts `./server/knn_index.pkl` into the container. Without it the AI flow still works, and `/api/predict` returns 503 with a startup warning telling you to build the index.
+
+### Recommendation data
+
+The slider flow needs `server/knn_index.pkl`. It isn't committed (184 MB). Build it from
+`tracks_features.csv`:
+
+1. Download `tracks_features.csv` from the Kaggle dataset
+   [Spotify 1.2M+ Songs](https://www.kaggle.com/datasets/rodolfofigueroa/spotify-12m-songs)
+   (`rodolfofigueroa/spotify-12m-songs`, needs a Kaggle account). Check its licence
+   on that page before redistributing anything derived from it.
+   The copy used during development came from a public Hugging Face mirror
+   (`TrishankV/Song-REcc`); its size matches Kaggle's listing and its SHA-256 is
+   `39ee20762e4bbfe9aefbef7464c5500091eecfdbe0a45d33981898be2530a9e6`.
+2. Put it at `server/tracks_features.csv`. It's gitignored.
+3. `python scripts/build_index.py` takes about 5 s and about 600 MB of RAM for the
+   1,204,025 rows.
+
+The script warns if the CSV's feature ranges differ from the slider ranges in
+`soundfrnt/src/lib/featureRanges.json`.
 
 ### Deploying beyond your machine
 
@@ -127,6 +146,7 @@ Sound-Sculptor/
 │   │   ├── hooks/, lib/     # auth bootstrap, motion presets, class helpers
 │   │   └── styles/          # Tailwind entry CSS
 │   └── vite.config.js       # Dev proxy + build config
+├── scripts/build_index.py   # Builds server/knn_index.pkl from tracks_features.csv
 ├── scripts/docker-smoke.sh  # Builds the image and checks container behaviour
 ├── .github/workflows/ci.yml # pytest, lint, build, Docker smoke test
 ├── Dockerfile               # Multi-stage: Node build → Python + Nginx
