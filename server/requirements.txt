@@ -1,6 +1,5 @@
 -c constraints.txt
 flask>=3.0
-flask-cors>=4.0
 spotipy>=2.26
 python-dotenv>=1.0
 joblib>=1.3

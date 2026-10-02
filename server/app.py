@@ -1,7 +1,6 @@
 import logging
 
 from flask import Flask, jsonify
-from flask_cors import CORS
 from flask_session import Session
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -19,14 +18,6 @@ def create_app(config=None):
 
     # Trust reverse proxy headers (nginx) so url_for generates correct URLs.
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
-
-    CORS(
-        app,
-        origins=app.config.get('CORS_ORIGINS', ['http://localhost:5173']),
-        methods=['GET', 'POST', 'OPTIONS'],
-        allow_headers=['Content-Type', 'Authorization'],
-        supports_credentials=True,
-    )
 
     from server.blueprints.auth import auth_bp
     from server.blueprints.playlist import playlist_bp

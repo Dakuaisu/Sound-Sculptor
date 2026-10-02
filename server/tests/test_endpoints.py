@@ -121,3 +121,11 @@ def test_connect_requests_only_needed_scopes(client):
     assert resp.status_code == 302
     query = parse_qs(urlparse(resp.headers['Location']).query)
     assert query['scope'] == ['playlist-modify-private playlist-modify-public']
+
+
+def test_cross_origin_requests_get_no_cors_grant(client):
+    resp = client.get('/api/health', headers={'Origin': 'https://evil.test'})
+    assert 'Access-Control-Allow-Origin' not in resp.headers
+    preflight = client.options('/api/ai/generate', headers={
+        'Origin': 'http://localhost:5173', 'Access-Control-Request-Method': 'POST'})
+    assert 'Access-Control-Allow-Credentials' not in preflight.headers

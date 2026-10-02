@@ -52,10 +52,6 @@ class Config:
     # In-memory limits are per gunicorn worker; use a shared store (e.g. Redis) to make them global.
     RATELIMIT_STORAGE_URI = os.environ.get('RATELIMIT_STORAGE_URI', 'memory://')
 
-    CORS_ORIGINS = os.environ.get(
-        'CORS_ORIGINS', 'http://localhost:5173'
-    ).split(',')
-
     FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://127.0.0.1:5173')
     # Must be registered verbatim in the Spotify dashboard. Spotify rejects
     # `localhost`; loopback must be 127.0.0.1, anything else must be HTTPS.

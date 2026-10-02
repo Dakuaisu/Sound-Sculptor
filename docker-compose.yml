@@ -10,7 +10,6 @@ services:
     environment:
       - FRONTEND_URL=http://127.0.0.1
       - SPOTIFY_REDIRECT_URI=http://127.0.0.1/api/callback
-      - CORS_ORIGINS=http://127.0.0.1
       - FLASK_ENV=production
     restart: unless-stopped
     volumes:
