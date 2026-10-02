@@ -27,7 +27,7 @@ RUN useradd --system --create-home --home-dir /home/app --shell /usr/sbin/nologi
 WORKDIR /app
 
 # Install Python dependencies
-COPY server/requirements.txt ./requirements.txt
+COPY server/requirements.txt server/constraints.txt ./
 RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
 # Copy backend source

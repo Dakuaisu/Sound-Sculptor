@@ -35,5 +35,3 @@ opencode.json
 *.pkl
 *.csv
 
-# Pipfile (using requirements.txt in Docker)
-Pipfile.lock

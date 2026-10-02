@@ -25,7 +25,7 @@ Both flows create a private playlist in your Spotify account.
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.11 (the version the pinned constraints, Docker image and CI use)
 - Node.js 18+
 - [Spotify Developer App](https://developer.spotify.com/dashboard) (get Client ID & Secret)
 - OpenAI API key (optional, for AI playlists)
@@ -43,8 +43,7 @@ cp .env.example .env
 # Edit .env with your Spotify and OpenAI credentials
 
 # Backend
-pip install -r server/requirements.txt
-# or: pipenv install
+pip install -r server/requirements.txt   # pinned via server/constraints.txt
 
 # Frontend
 cd soundfrnt && npm install && cd ..
