@@ -145,8 +145,7 @@ def generate():
         return {'error': 'No matching tracks found on Spotify'}, 404
 
     # --- Create the playlist (chunked) ---
-    user_id = sp.current_user()['id']
-    playlist = create_playlist_with_tracks(sp, user_id, playlist_name, track_ids, public=True)
+    playlist = create_playlist_with_tracks(sp, playlist_name, track_ids, public=True)
 
     result = {
         'playlist_id': playlist['id'],

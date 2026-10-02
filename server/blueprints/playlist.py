@@ -52,8 +52,7 @@ def create_playlist():
         name = 'Sound Sculptor Playlist'
 
     sp = get_spotify_client()  # PermissionError -> 401 via the central handler
-    user_id = sp.current_user()['id']
-    playlist = create_playlist_with_tracks(sp, user_id, name, track_ids, public=True)
+    playlist = create_playlist_with_tracks(sp, name, track_ids, public=True)
 
     return {
         'playlist_id': playlist['id'],

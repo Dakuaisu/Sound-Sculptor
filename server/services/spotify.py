@@ -64,7 +64,7 @@ def get_spotify_client():
     return spotipy.Spotify(auth=access_token)
 
 
-def create_playlist_with_tracks(sp, user_id, name, track_ids, public=True):
+def create_playlist_with_tracks(sp, name, track_ids, public=True):
     """Create a playlist and add ``track_ids``, chunked to Spotify's
     100-tracks-per-request limit.
 
@@ -72,8 +72,10 @@ def create_playlist_with_tracks(sp, user_id, name, track_ids, public=True):
     the chunking lives in exactly one place (the AI path previously added all
     tracks in a single unchunked call).
     """
-    playlist = sp.user_playlist_create(user_id, name, public=public)
+    # /me/playlists and /playlists/{id}/items: the /users/{id}/playlists and
+    # /playlists/{id}/tracks paths are removed for new Development Mode apps.
+    playlist = sp.current_user_playlist_create(name, public=public)
     uris = [f'spotify:track:{tid}' for tid in track_ids]
     for i in range(0, len(uris), 100):
-        sp.user_playlist_add_tracks(user_id, playlist['id'], uris[i:i + 100])
+        sp.playlist_add_items(playlist['id'], uris[i:i + 100])
     return playlist
