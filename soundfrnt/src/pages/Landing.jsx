@@ -112,7 +112,7 @@ const FEATURES = [
   {
     icon: SlidersHorizontal,
     title: 'Or sculpt it by hand',
-    body: 'Dial in energy, danceability, tempo, and more on a tactile control panel backed by a model trained on 1M+ tracks.',
+    body: 'Dial in energy, danceability, tempo, and more on a tactile control panel, then get the closest matches among 1.2M indexed tracks.',
   },
   {
     icon: ListMusic,
@@ -184,7 +184,7 @@ export default function Landing() {
       <section className="border-y border-line bg-surface-1/40">
         <div className="mx-auto grid max-w-content grid-cols-2 gap-px overflow-hidden md:grid-cols-4">
           {[
-            ['1M+', 'tracks modeled'],
+            ['1.2M', 'tracks indexed'],
             ['2', 'ways to create'],
             ['7', 'audio dimensions'],
             ['Private', 'by default'],

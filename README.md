@@ -6,7 +6,7 @@ AI-powered playlist generator that combines Spotify, machine learning, and an Op
 
 **Two ways to create playlists:**
 
-1. **Sculpt It Yourself** — Pick your mood, choose genres, fine-tune audio sliders (danceability, energy, acousticness, instrumentalness, loudness, tempo, liveness), and get ML-powered recommendations from a KNN model trained on 1M+ songs.
+1. **Sculpt It Yourself** — Pick your mood, choose genres, fine-tune audio sliders (danceability, energy, acousticness, instrumentalness, loudness, tempo, liveness), and get the closest matches from a nearest-neighbour index of 1.2M tracks. KNN doesn't learn anything: the seven audio features of every track are standardized (zero mean, unit variance, so no feature dominates the distance) and indexed. Your slider settings become a point in that space, and the nearest tracks by Euclidean distance form the playlist.
 
 2. **AI Generated** — Describe what you want in plain text ("chill vibes for a rainy afternoon"). An OpenAI model (configurable via `OPENAI_MODEL`) suggests songs; each is looked up on Spotify and kept only if the artist matches, so invented songs are dropped.
 
@@ -18,7 +18,7 @@ Both flows create a private playlist in your Spotify account.
 |-------|-----------|
 | Frontend | React 18, React Router v6, Zustand, Vite, Tailwind CSS, Framer Motion |
 | Backend | Flask, Blueprints, SpotiPy, OpenAI SDK, Flask-Session, Flask-Limiter |
-| ML | scikit-learn KNN, joblib, pandas |
+| ML | scikit-learn `StandardScaler` + `NearestNeighbors`, joblib, pandas |
 | Infra | Docker, Nginx, Gunicorn |
 
 ## Quick Start
@@ -134,7 +134,7 @@ Sound-Sculptor/
 │   │   └── ai.py            # /api/ai/generate
 │   └── services/
 │       ├── spotify.py       # OAuth + token management
-│       └── ml.py            # KNN model loading + prediction
+│       └── ml.py            # Build/load the KNN index, nearest-neighbour queries
 │   └── tests/               # pytest suite (no network; synthetic fixtures)
 ├── soundfrnt/               # React SPA
 │   ├── src/

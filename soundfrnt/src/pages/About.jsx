@@ -7,7 +7,7 @@ import { fadeUp, staggerContainer, staggerItem } from '@/lib/motion'
 
 const STEPS = [
   { icon: Sparkles, title: 'Describe or sculpt', body: 'Type a vibe in plain words, or hand-tune seven audio dimensions on the control panel.' },
-  { icon: SlidersHorizontal, title: 'We find the tracks', body: 'AI composes a tracklist, or a model trained on 1M+ songs recommends matches — then we look them up on Spotify.' },
+  { icon: SlidersHorizontal, title: 'We find the tracks', body: 'AI composes a tracklist, or a nearest-neighbour search over 1.2M tracks finds the closest matches — then we look them up on Spotify.' },
   { icon: ListMusic, title: 'Find it in Spotify', body: 'Preview the full playlist inline. It is already in your Spotify account as a private playlist.' },
 ]
 
