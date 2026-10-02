@@ -17,7 +17,8 @@ ai_bp = Blueprint('ai', __name__, url_prefix='/api/ai')
 limiter = Limiter(key_func=get_remote_address)
 
 MAX_PROMPT_LEN = 500
-SEARCH_LIMIT = 5
+SEARCH_LIMIT = 10  # Spotify's maximum for /search
+_CREDIT_SEPARATORS = re.compile(r'\s*(?:,|&|\bfeat\.?|\bft\.?|\bfeaturing\b|\bwith\b|\sx\s)\s*', re.IGNORECASE)
 
 
 def _norm(name: str) -> str:
@@ -25,21 +26,49 @@ def _norm(name: str) -> str:
     return ''.join(c for c in decomposed if c.isalnum()).lower()
 
 
+def _artist_names(artist: str) -> set[str]:
+    """Normalized forms of a credited artist string, whole and split on feat./&/, credits."""
+    parts = [artist, *_CREDIT_SEPARATORS.split(artist)]
+    return {n for n in (_norm(p) for p in parts) if n}
+
+
 def _pick_matching_track(items: list[dict], artist: str) -> dict | None:
-    """Return the first search hit whose artist matches the LLM-named artist.
+    """Return the first search hit credited to the LLM-named artist, or None.
 
     The model can name songs that don't exist; Spotify search still returns
-    *something*, so an unverified top hit would silently add an unrelated song.
+    *something*, so an unverified hit would silently add an unrelated song.
     """
-    wanted = _norm(artist or '')
-    if not wanted:
-        return None
+    wanted = _artist_names(artist or '')
     for track in items:
-        for a in track.get('artists', []):
-            got = _norm(a.get('name', ''))
-            if got and (got in wanted or wanted in got):
-                return track
+        if wanted & {_norm(a.get('name', '')) for a in track.get('artists', [])}:
+            return track
     return None
+
+
+def _match_songs(sp, songs: list[dict]) -> list[dict]:
+    """Look each song up on Spotify; report every song as matched / not_found / search_failed."""
+    results = []
+    for song in songs:
+        title, artist = song.get('title', '').strip(), song.get('artist', '').strip()
+        entry = {'title': title, 'artist': artist, 'status': 'not_found', 'track': None}
+        results.append(entry)
+        if not title or not artist:
+            continue
+        try:
+            found = sp.search(q=f'track:{title} artist:{artist}', type='track', limit=SEARCH_LIMIT)
+        except SpotifyException as exc:
+            logger.warning('Spotify search failed for %r by %r: %s', title, artist, exc)
+            entry['status'] = 'search_failed'
+            continue
+        track = _pick_matching_track(found.get('tracks', {}).get('items', []), artist)
+        if track:
+            entry['status'] = 'matched'
+            entry['track'] = {
+                'id': track['id'],
+                'name': track['name'],
+                'artist': ', '.join(a['name'] for a in track['artists']),
+            }
+    return results
 
 
 def _parse_songs_from_text(text: str) -> list[dict]:
@@ -151,30 +180,17 @@ def generate():
         logger.warning('Could not parse songs from AI response')
         return {'error': 'Could not read the AI recommendations. Try a different prompt.'}, 502
 
-    # --- Search Spotify for each song (a single failed lookup is skipped, not fatal) ---
-    track_ids = []
+    statuses = _match_songs(sp, songs)
     matched_tracks = []
-    for song in songs:
-        search_q = f"{song.get('title', '')} {song.get('artist', '')}".strip()
-        if not search_q:
-            continue
-        try:
-            results = sp.search(q=search_q, type='track', limit=SEARCH_LIMIT)
-        except SpotifyException as exc:
-            logger.warning('Spotify search failed for %r: %s', search_q, exc)
-            continue
-        track = _pick_matching_track(results.get('tracks', {}).get('items', []), song.get('artist', ''))
-        if track and track['id'] not in track_ids:
-            track_ids.append(track['id'])
-            matched_tracks.append({
-                'id': track['id'],
-                'name': track['name'],
-                'artist': ', '.join(a['name'] for a in track['artists']),
-                'query': search_q,
-            })
+    for entry in statuses:
+        if entry['status'] == 'matched' and entry['track']['id'] not in {t['id'] for t in matched_tracks}:
+            matched_tracks.append(entry['track'])
+    matched_songs = sum(e['status'] == 'matched' for e in statuses)
+    match_summary = {'songs': statuses, 'match_rate': round(matched_songs / len(statuses), 3)}
 
-    if not track_ids:
-        return {'error': 'No matching tracks found on Spotify'}, 404
+    if not matched_tracks:
+        return {'error': 'None of the suggested songs were found on Spotify', **match_summary}, 404
+    track_ids = [t['id'] for t in matched_tracks]
 
     # --- Create the playlist (chunked) ---
     playlist = create_playlist_with_tracks(sp, playlist_name, track_ids)
@@ -186,6 +202,7 @@ def generate():
         'tracks': matched_tracks,
         'total_matched': len(matched_tracks),
         'total_requested': len(songs),
+        **match_summary,
     }
 
     return result
