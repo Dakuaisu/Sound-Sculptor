@@ -40,3 +40,10 @@ def test_cleanup_failure_does_not_mask_original_error():
     sp._delete.side_effect = RuntimeError('delete failed')
     with pytest.raises(RuntimeError, match='add failed'):
         create_playlist_with_tracks(sp, 'Mix', ['a'])
+
+
+def test_duplicate_track_ids_are_added_once_in_order():
+    sp = _fake_sp()
+    create_playlist_with_tracks(sp, 'Mix', ['b', 'a', 'b', 'c', 'a'])
+    sp.playlist_add_items.assert_called_once_with(
+        'pl1', ['spotify:track:b', 'spotify:track:a', 'spotify:track:c'])

@@ -92,3 +92,11 @@ def test_model_and_token_cap_come_from_config(app, client, fakes):
     client.post('/api/ai/generate', json={'prompt': 'x'})
     assert fakes.openai_kwargs['model'] == 'configured-model'
     assert fakes.openai_kwargs['max_completion_tokens'] == 123
+
+
+def test_same_track_suggested_twice_is_listed_once(client, fakes):
+    fakes.llm_text = '"Clocks" by Coldplay\n1. Clocks - Coldplay'
+    fakes.search_results = {'Clocks Coldplay': [_track('c', 'Clocks', 'Coldplay')]}
+    body = client.post('/api/ai/generate', json={'prompt': 'x'}).get_json()
+    assert fakes.create_calls == [['c']]
+    assert body['total_matched'] == 1

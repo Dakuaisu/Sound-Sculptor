@@ -160,7 +160,7 @@ def generate():
             logger.warning('Spotify search failed for %r: %s', search_q, exc)
             continue
         track = _pick_matching_track(results.get('tracks', {}).get('items', []), song.get('artist', ''))
-        if track:
+        if track and track['id'] not in track_ids:
             track_ids.append(track['id'])
             matched_tracks.append({
                 'id': track['id'],
