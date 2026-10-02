@@ -30,11 +30,12 @@ def create_app(config=None):
 
     from server.blueprints.auth import auth_bp
     from server.blueprints.playlist import playlist_bp
-    from server.blueprints.ai import ai_bp
+    from server.blueprints.ai import ai_bp, limiter
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(playlist_bp)
     app.register_blueprint(ai_bp)
+    limiter.init_app(app)
 
     register_error_handlers(app)
 

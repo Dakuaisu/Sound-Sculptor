@@ -4,6 +4,8 @@ import re
 import unicodedata
 
 from flask import Blueprint, request, session, current_app
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from openai import OpenAI, OpenAIError
 from spotipy.exceptions import SpotifyException
 
@@ -12,6 +14,7 @@ from server.services.spotify import get_spotify_client, create_playlist_with_tra
 logger = logging.getLogger(__name__)
 
 ai_bp = Blueprint('ai', __name__, url_prefix='/api/ai')
+limiter = Limiter(key_func=get_remote_address)
 
 MAX_PROMPT_LEN = 500
 SEARCH_LIMIT = 5
@@ -85,6 +88,7 @@ def _parse_songs_from_text(text: str) -> list[dict]:
 
 
 @ai_bp.route('/generate', methods=['POST'])
+@limiter.limit(lambda: current_app.config['AI_RATE_LIMIT'])
 def generate():
     """Generate a playlist via OpenAI based on a text prompt."""
     data = request.get_json(silent=True)

@@ -100,3 +100,13 @@ def test_same_track_suggested_twice_is_listed_once(client, fakes):
     body = client.post('/api/ai/generate', json={'prompt': 'x'}).get_json()
     assert fakes.create_calls == [['c']]
     assert body['total_matched'] == 1
+
+
+def test_generate_is_rate_limited_with_json_429(app, client, fakes):
+    app.config['AI_RATE_LIMIT'] = '2 per minute'
+    fakes.llm_text = '"Clocks" by Coldplay'
+    fakes.search_results = {'Clocks Coldplay': [_track('c', 'Clocks', 'Coldplay')]}
+    codes = [client.post('/api/ai/generate', json={'prompt': 'x'}).status_code for _ in range(3)]
+    assert codes == [200, 200, 429]
+    resp = client.post('/api/ai/generate', json={'prompt': 'x'})
+    assert resp.get_json()['error']

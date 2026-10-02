@@ -59,6 +59,10 @@ def register_error_handlers(app):
     def _not_found(_exc):
         return jsonify(error='Not found'), 404
 
+    @app.errorhandler(429)
+    def _too_many_requests(_exc):
+        return jsonify(error='Too many playlist generations. Please wait a bit and try again.'), 429
+
     @app.errorhandler(405)
     def _method_not_allowed(_exc):
         return jsonify(error='Method not allowed'), 405
