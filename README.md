@@ -131,7 +131,7 @@ Sound-Sculptor/
 ├── scripts/docker-smoke.sh  # Builds the image and checks container behaviour
 ├── .github/workflows/ci.yml # pytest, lint, build, Docker smoke test
 ├── Dockerfile               # Multi-stage: Node build → Python + Nginx
-├── docker-compose.yml       # Production + dev profiles
+├── docker-compose.yml       # Production stack (app + model volumes)
 ├── nginx.conf               # SPA routing + API proxy
 └── .env.example             # Required environment variables
 ```
