@@ -1,4 +1,0 @@
-# Revoked Spotify token in server/.cache (commits 92e6245, 4a0b100).
-# Delete this file after the history rewrite in docs/SECURITY_CLEANUP.md.
-4a0b10020e3e1525ad9579ceaa24d8827f576e9d:server/.cache:generic-api-key:1
-92e6245f5c71b87e784b126775651cbbb5e79751:server/.cache:generic-api-key:1

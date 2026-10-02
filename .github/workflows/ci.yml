@@ -48,4 +48,4 @@ jobs:
       - name: Scan full git history for secrets
         run: >
           docker run --rm -v "$PWD":/repo ghcr.io/gitleaks/gitleaks:v8.30.1
-          git /repo --no-banner --redact --gitleaks-ignore-path /repo/.gitleaksignore
+          git /repo --no-banner --redact
