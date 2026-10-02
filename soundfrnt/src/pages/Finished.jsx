@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, ExternalLink, Share2, RotateCcw, Music2, ListMusic, Sparkles } from 'lucide-react'
+import { Check, ExternalLink, Share2, RotateCcw, Music2, ListMusic, Sparkles, SearchX } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
@@ -8,6 +8,7 @@ import Equalizer from '@/components/ui/Equalizer'
 import EmptyState from '@/components/ui/EmptyState'
 import useStore from '@/stores/useStore'
 import { cn } from '@/lib/cn'
+import { summarizeMatches, matchHeadline } from '@/lib/matchSummary'
 import { staggerContainer, trackItem, fadeUp } from '@/lib/motion'
 
 const COVERS = [
@@ -38,6 +39,7 @@ export default function Finished() {
   const cover = COVERS[(name.length || 0) % COVERS.length]
   const embedUrl = `https://open.spotify.com/embed/playlist/${playlist.playlist_id}?theme=0`
   const tracks = playlist.source === 'ai' && Array.isArray(playlist.tracks) ? playlist.tracks : null
+  const matches = playlist.source === 'ai' ? summarizeMatches(playlist.songs) : null
 
   async function handleShare() {
     const url = playlist.external_url
@@ -117,6 +119,37 @@ export default function Finished() {
 
         {/* ----- Tracklist (AI) + live player ----- */}
         <div className="space-y-6">
+          {matches && (
+            <Card className="p-4 sm:p-5" aria-live="polite">
+              <p className="flex items-center gap-2 text-body font-semibold text-text-1">
+                {matches.missing.length ? (
+                  <SearchX className="h-4 w-4 text-amber" aria-hidden="true" />
+                ) : (
+                  <Check className="h-4 w-4 text-success" aria-hidden="true" />
+                )}
+                {matchHeadline(matches)}
+              </p>
+              {matches.missing.length > 0 && (
+                <>
+                  <ul className="mt-3 space-y-1.5">
+                    {matches.missing.map((m, i) => (
+                      <li key={`${m.title}-${i}`} className="flex items-baseline justify-between gap-3 text-body-sm">
+                        <span className="min-w-0 truncate text-text-2">
+                          {m.title} <span className="text-text-3">· {m.artist}</span>
+                        </span>
+                        <span className="shrink-0 text-caption text-text-3">{m.reason}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-3 text-caption text-text-3">
+                    The AI suggested these, but they couldn&apos;t be confirmed on Spotify, so they were left out
+                    rather than swapped for a different song.
+                  </p>
+                </>
+              )}
+            </Card>
+          )}
+
           {tracks && (
             <Card className="p-2 sm:p-3">
               <motion.ul variants={staggerContainer(0.05)} initial="initial" animate="animate">

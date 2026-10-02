@@ -31,6 +31,7 @@ jobs:
           cache-dependency-path: soundfrnt/package-lock.json
       - run: npm ci
       - run: npm run lint
+      - run: npm test
       - run: npm run build
 
   docker:

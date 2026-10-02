@@ -118,7 +118,7 @@ Add these redirect URIs in your [Spotify Dashboard](https://developer.spotify.co
 pip install -r server/requirements-dev.txt
 ruff check server scripts                 # backend lint
 python -m pytest server/tests -q          # backend tests
-cd soundfrnt && npm run lint && npm run build
+cd soundfrnt && npm run lint && npm test && npm run build
 ./scripts/docker-smoke.sh                 # needs Docker
 ```
 
