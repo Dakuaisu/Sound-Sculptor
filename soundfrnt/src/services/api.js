@@ -49,13 +49,6 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ playlist_id: playlistId }),
     }),
-
-  // User data
-  getUserData: () => request('/user-data'),
-
-  // Discover Weekly
-  saveDiscoverWeekly: () =>
-    request('/save-discover-weekly', { method: 'POST' }),
 }
 
 export default api
