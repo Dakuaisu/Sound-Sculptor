@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import Stepper from '@/components/ui/Stepper'
 import { fadeUp } from '@/lib/motion'
 
-export const WIZARD_STEPS = [
+const WIZARD_STEPS = [
   { key: 'mood', label: 'Mood' },
   { key: 'genre', label: 'Genre' },
   { key: 'tune', label: 'Tune' },

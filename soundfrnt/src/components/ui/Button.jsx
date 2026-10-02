@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { spring } from '@/lib/motion'
 
-export const buttonVariants = cva(
+const buttonVariants = cva(
   'relative inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-pill font-ui font-semibold leading-none select-none transition-[color,background-color,border-color,filter,box-shadow] duration-200 ease-out-expo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {

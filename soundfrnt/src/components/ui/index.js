@@ -1,4 +1,4 @@
-export { default as Button, buttonVariants } from './Button'
+export { default as Button } from './Button'
 export { default as Card } from './Card'
 export { default as Input, Textarea } from './Input'
 export { default as Chip } from './Chip'

@@ -70,7 +70,7 @@ export default function Connect() {
             </Button>
 
             <p className="mt-4 flex items-center justify-center gap-1.5 text-caption text-text-3">
-              <ShieldCheck className="h-3.5 w-3.5" /> You'll authorize securely on Spotify's site.
+              <ShieldCheck className="h-3.5 w-3.5" /> You&apos;ll authorize securely on Spotify&apos;s site.
             </p>
           </div>
         </Card>
