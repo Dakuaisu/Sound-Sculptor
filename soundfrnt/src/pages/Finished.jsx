@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Check, ExternalLink, Share2, RotateCcw, Music2, ListMusic, Sparkles, SearchX } from 'lucide-react'
+import { Check, ExternalLink, Share2, RotateCcw, Music2, ListMusic, Sparkles, SearchX, ChevronDown } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
@@ -8,7 +8,7 @@ import Equalizer from '@/components/ui/Equalizer'
 import EmptyState from '@/components/ui/EmptyState'
 import useStore from '@/stores/useStore'
 import { cn } from '@/lib/cn'
-import { summarizeMatches, matchHeadline } from '@/lib/matchSummary'
+import { summarizeMatches, matchHeadline, missingToggleLabel } from '@/lib/matchSummary'
 import { staggerContainer, trackItem, fadeUp } from '@/lib/motion'
 
 const COVERS = [
@@ -130,7 +130,11 @@ export default function Finished() {
                 {matchHeadline(matches)}
               </p>
               {matches.missing.length > 0 && (
-                <>
+                <details className="group mt-3">
+                  <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded text-body-sm text-text-2 hover:text-text-1 [&::-webkit-details-marker]:hidden">
+                    <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+                    {missingToggleLabel(matches)}
+                  </summary>
                   <ul className="mt-3 space-y-1.5">
                     {matches.missing.map((m, i) => (
                       <li key={`${m.title}-${i}`} className="flex items-baseline justify-between gap-3 text-body-sm">
@@ -145,7 +149,7 @@ export default function Finished() {
                     The AI suggested these, but they couldn&apos;t be confirmed on Spotify, so they were left out
                     rather than swapped for a different song.
                   </p>
-                </>
+                </details>
               )}
             </Card>
           )}
