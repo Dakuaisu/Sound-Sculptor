@@ -221,21 +221,32 @@ Sound-Sculptor/
 
 ## Screenshots
 
-![Demo Screenshot 1](https://github.com/user-attachments/assets/e98c11c1-1f13-404e-822a-576ea4db5c6b)
+**Landing page**
+![Landing page: "Shape the sound of how you feel", with a sample playlist card](docs/screenshots/01-landing.png)
 
-**Connect your Spotify account:**
-![Demo Screenshot 2](https://github.com/user-attachments/assets/51676938-d7d7-4b81-93ea-ef69db7d535e)
+**About**
+![About page: the three steps, describe or sculpt, find the tracks, find it in Spotify](docs/screenshots/02-about.png)
 
-**Choose how to create your playlist:**
-![Playlist Creation Options](https://github.com/user-attachments/assets/1aa49f33-ea22-4800-aac8-0d2c82dadad0)
+**Connect your Spotify account**
+![Connect page with the permissions requested and a Connect with Spotify button](docs/screenshots/03-connect.png)
 
-**AI-Generated Playlist:**
-![AI-Generated Playlist](https://github.com/user-attachments/assets/d4700349-7219-472a-af4a-eb1d327d5efb)
+**Choose how to create**
+![Choice page: Describe it (AI) or Sculpt it (sliders)](docs/screenshots/04-choice.png)
 
-**Sculpt It Yourself:**
-![Sculpt-it Yourself Option 1](https://github.com/user-attachments/assets/65e388de-6655-4555-a997-2799f96e3fef)
-![Sculpt-it Yourself Option 2](https://github.com/user-attachments/assets/48cb104b-162e-4995-a81c-1040b86af582)
-![Sculpt-it Yourself Option 3](https://github.com/user-attachments/assets/6977533d-09b7-47ae-924a-0d0423675392)
+**AI: describe your vibe**
+![AI prompt page with a typed prompt and suggestion chips](docs/screenshots/05-ai-prompt.png)
+
+**AI: generating**
+![Loader reading "Sculpting your playlist"](docs/screenshots/06-ai-generating.png)
+
+**AI: finished, with match results**
+![Finished page: "17 of 20 suggested songs found on Spotify", the 3 songs that weren't added and why, and the tracklist](docs/screenshots/07-ai-finished.png)
+
+**Sculpt it: pick moods**
+![Mood step with Calm and Reflective selected](docs/screenshots/08-mood.png)
+
+**Sculpt it: fine-tune the sliders**
+![Seven audio sliders with a radar chart and a Match my mood button](docs/screenshots/09-sliders.png)
 
 ## License
 
